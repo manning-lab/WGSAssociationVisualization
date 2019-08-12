@@ -6,13 +6,12 @@
 
 ## Steps to be followed - 
 Execute in your terminal - 
- 1) To clone this repository to your local machine 
- ```git clone ```
- 2) docker build -t manninglab/gcloud-htslib-shiny-image .
- 3) cd manninglab-wgs-visualization/
- 4) docker build -t manninglab/visualization_app .
- 5) docker run --name visualization_app -ti -p 3838:80 manninglab/visualization_app /bin/bash
- 6) ./install_script
+ 1) To clone this repository to your local machine <br> ```git clone https://github.com/manning-lab/WGSAssociationVisualization.git```
+ 2) To build the base docker image <br> ```docker build -t manninglab/gcloud-htslib-shiny-image . ```
+ 3) Change working directory to manninglab-wgs-visualization <br> ```cd manninglab-wgs-visualization/ ```
+ 4) To build the manninglab/visualization_app image <br> ```docker build -t manninglab/visualization_app . ```
+ 5) To run the image manninglab/visualization_app in a container called visualization_app <br> ```docker run --name visualization_app -ti -p 3838:80 manninglab/visualization_app /bin/bash ```
+ 6) Executing the appfiles, starting with the Google Cloud configuration <br>```./config_script ```
  7) Copy the URL 
  
 Navigate to your web browser -
