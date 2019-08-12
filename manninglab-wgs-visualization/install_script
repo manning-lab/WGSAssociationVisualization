@@ -4,6 +4,4 @@ set timeout -1
 spawn ./login_script.sh
 expect "*Enter verification code:" {interact ++ return; send "\r"}
 
-expect "*Listening on http://127.0.0.1:36613" {interact ++ return; send "\r"}
-
 expect eof

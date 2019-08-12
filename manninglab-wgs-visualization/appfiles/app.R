@@ -12,9 +12,9 @@ ui <- fluidPage(
 				      actionButton("down", "Download plot")) 
 			     ),
 		mainPanel(
-			  textOutput("command"),
-			  tableOutput("selected_opt"),
-			  plotOutput("plot")
+			  plotOutput("plot"),
+			  tableOutput("dwnfiles"),
+			  textOutput("comm")
 			  )
 		)
 
@@ -22,7 +22,7 @@ ui <- fluidPage(
 server <- function(input, output, session) 
 {
 	setwd("/tmp")
-        observeEvent(input$submit,
+	observeEvent(input$submit,
 		     {
 			     gspath <- input$gspath
 			     accesstoken <- input$accesstoken
@@ -34,15 +34,19 @@ server <- function(input, output, session)
 			     
 			     output$plot <- renderPlot(plot(temp$V3, -log10(temp$V10), xlab="Position", ylab="Negative log of P-value"))
 
-		     
 	 observeEvent(input$down,
 		                           {
 						   png(paste0("Regional_plot_", searchrange, ".png"))
 						   plot(temp$V3, -log10(temp$V10), xlab="Position", ylab="Negative log of P-value")
 						   dev.off()
+						   files <- data.frame(file = readLines(pipe("ls -al | grep Regional")))
+						   files <- data.frame(Files = substring(files$file, regexpr("Reg", files$file)))
+						   output$dwnfiles <- renderTable(files)
+						   output$comm <- renderText("To copy files to host machine, run the following command after exiting the session - docker cp [container_id]:/tmp/[filename] filename-CONTAINER_ID.png")
 
 					   })
 	 		})
+	 		
 	    }
 
 options(shiny.port = 3838)
