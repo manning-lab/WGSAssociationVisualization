@@ -6,7 +6,8 @@
 
 ## Steps to be followed - 
 Execute in your terminal - 
- 1) git clone 
+ 1) To clone this repository to your local machine 
+ ```git clone ```
  2) docker build -t manninglab/gcloud-htslib-shiny-image .
  3) cd manninglab-wgs-visualization/
  4) docker build -t manninglab/visualization_app .
