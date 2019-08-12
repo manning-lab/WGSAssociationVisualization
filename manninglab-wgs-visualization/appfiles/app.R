@@ -5,16 +5,16 @@ ui <- fluidPage(
 		sidebarPanel(
 			     # Adding input box, buttons and drop-down list
 			     fluidRow(
-				      textInput("gspath", h3("Enter Path to file")),
 				      textInput("accesstoken", h3("Access token")),
+				      textInput("gspath", h3("Enter Path to file")),
 				      textInput("searchrange", h3("Search Range")),
 				      actionButton("submit", "Submit"),
 				      actionButton("down", "Download plot")) 
 			     ),
 		mainPanel(
 			  plotOutput("plot"),
-			  tableOutput("dwnfiles"),
-			  textOutput("comm")
+			  textOutput("comm"),
+			  tableOutput("dwnfiles")
 			  )
 		)
 
@@ -39,11 +39,10 @@ server <- function(input, output, session)
 						   png(paste0("Regional_plot_", searchrange, ".png"))
 						   plot(temp$V3, -log10(temp$V10), xlab="Position", ylab="Negative log of P-value")
 						   dev.off()
+						   output$comm <- renderText("To copy the plot/s to host machine, run the following command/s after exiting the session -")
 						   files <- data.frame(file = readLines(pipe("ls -al | grep Regional")))
-						   files <- data.frame(Files = substring(files$file, regexpr("Reg", files$file)))
+						   files <- data.frame(Commands = paste0("docker cp visualization_app:/tmp/", substring(files$file, regexpr("Reg", files$file)), " ./", substring(files$file, regexpr("Reg", files$file)), "-CONTAINER_NAME.png"))
 						   output$dwnfiles <- renderTable(files)
-						   output$comm <- renderText("To copy files to host machine, run the following command after exiting the session - docker cp [container_id]:/tmp/[filename] filename-CONTAINER_ID.png")
-
 					   })
 	 		})
 	 		

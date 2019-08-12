@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set timeout -1
 gcloud auth application-default login
 read REPLY
