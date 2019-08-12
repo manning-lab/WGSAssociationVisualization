@@ -1,0 +1,31 @@
+version: "3.0"
+
+services:
+  shiny:
+    container_name: visualization_app
+    # To build the image locally, comment out "image" below, and uncomment
+    # "build" and the lines indented under it.
+    # image: simple_app
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    # Setting this to something other than 'root' will cause shiny apps not to
+    # run on the localhost:80 "Welcome to Shiny" diagnostics page mentioned
+    # below.
+    user: 'root'
+    # Uncomment the lines below to disable application logs STDOUT output
+    # environment:
+    #   - APPLICATION_LOGS_TO_STDOUT=false
+    ports:
+      - '3838:80'
+    volumes:
+      - 'shiny_logs:/var/log/shiny-server'
+      - './shiny-server.conf:/etc/shiny-server'
+      # Comment the line below out for initial testing. With it commented out,
+      # going to localhost:80 in one's web browser will show a "Welcome to
+      # Shiny Server!" diagnostics page.
+      - './appfiles:/srv/shiny-server'
+
+volumes:
+  shiny_logs:
