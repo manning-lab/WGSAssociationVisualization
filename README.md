@@ -61,7 +61,7 @@ Execute in your terminal -
  ```
  - Run the image manninglab/visualization_app in a docker container called visualization_app <br> 
  ```
-   docker run --name visualization_app -ti -p 3838:80 manninglab/visualization_app /bin/bash 
+   docker run --rm --name visualization_app -ti -p 3838:80 manninglab/visualization_app /bin/bash 
  ```
  
  #### Starting the application from a Docker container
@@ -113,23 +113,14 @@ Navigate to your web browser -
  - Enter the columns numbers for the Marker name (a unique variant identifier), chromosome of the variant, position of the variant and p-value of the variant. For eg. for the column headers given in the description, the input would be 1, 2, 3 and 10 respectively.
  - Enter the range you want to search in. (For eg. 10:112948590-113048589)
  - Click Submit to view the plot
- - Clicking the Download button will download the plot as a .png file (for eg. Regional_plot_10:112948590-113048589.png) in your docker environment. Additionally, it will also generate a list of commands for downloading your plot, from the docker environment to your local machine. You can keep plotting different regions and with each submit, a new download command will be appended to the list.
- For example: 
- ```
-   docker cp visualization_app:/tmp/Regional_plot_10:112948590-113048589.png ./Regional_plot_10:112948590-113048589.png-CONTAINER_NAME.png
- ```
- - Once you are ready to exit the application, copy and save the commands displayed below the plot, to use them later. 
+ - Clicking the Download button will download the plot as a .png file (for eg. Regional_plot_10:112948590-113048589.png) 
  
-#### Obtaining the regional plots
+#### Exiting the docker container
 Navigate back to your terminal - 
  - Type Ctrl+C on Windows or Command+C on Mac
- - Exit the docker session. **Note:** your docker container is still running on port 3838 so you can still download your plots.
+ - Exit the docker session. 
  ```
    exit
- ```
- - Paste the copied commands to copy the downloaded plot to your local machine.
- ```
-   docker cp visualization_app:/tmp/Regional_plot_10:112948590-113048589.png ./Regional_plot_10:112948590-113048589.png-CONTAINER_NAME.png
  ```
   
 
