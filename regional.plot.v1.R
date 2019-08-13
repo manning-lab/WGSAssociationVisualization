@@ -336,60 +336,60 @@ makePlot <- function(chr, start, end, variant_data, variant_chr_column, variant_
 
 
 # testing inputs
-data.dir <- "/Users/tmajaria/Documents/projects/WGSAssociationVisualization/"
-variant.file <- paste0(data.dir, "1kg-t2d.all.assoc.aug12.txt.gz")
-ld.file <- paste0(data.dir, "1kg-t2d.chr20_60.9M-61.1M.ld.csv")
-bed.file <- paste0(data.dir, "Islets.chromatinStates.bed")
+# data.dir <- "/Users/tmajaria/Documents/projects/WGSAssociationVisualization/"
+# variant.file <- paste0(data.dir, "1kg-t2d.all.assoc.aug12.txt.gz")
+# ld.file <- paste0(data.dir, "1kg-t2d.chr20_60.9M-61.1M.ld.csv")
+# bed.file <- paste0(data.dir, "Islets.chromatinStates.bed")
 
-chr <- 20
-start <- 60900000
-end <- 61100000
-variant_data <- fread(variant.file, data.table = F, stringsAsFactors = F)
-variant_data <- variant_data[!is.na(variant_data$chr),]
-variant_data$MarkerName <- sub("chr", "", variant_data$MarkerName)
-variant_chr_column = "chr"
-variant_pos_column = "pos"
-variant_y_column = "pvalue"
-variant_marker_column = "MarkerName"
-variant_ld_data <- fread(ld.file, data.table = F, stringsAsFactors = F)
-variant_ld_ref = "20-61000005-A-G"
-genome_build = "hg19"
-variant_should_log = T
-variant_horizontal_value = 5e-8
-variant_horizontal_color = "red"
-variant_horizontal_style = "dashed"
-variant_background_color = "#e6550d"
-variant_background_frame = T
-variant_point_color = "#252525"
-variant_title = "Waste hip ratio"
-gene_highlight = "LYPLAL1"
-gene_title = "Genomic Context"
-gene_background_color = "#31a354"
-gene_frame = T
-bed_data <- list(fread(bed.file, data.table = F, stringsAsFactors = F))
-bed_data[[1]][,1] <- sub("chr", "", bed_data[[1]][,1])
-bed_titles = "Islet HMM"
-bed_background_colors = c("#3182bd")
-bed_frame = T
+# chr <- 20
+# start <- 60900000
+# end <- 61100000
+# variant_data <- fread(variant.file, data.table = F, stringsAsFactors = F)
+# variant_data <- variant_data[!is.na(variant_data$chr),]
+# variant_data$MarkerName <- sub("chr", "", variant_data$MarkerName)
+# variant_chr_column = "chr"
+# variant_pos_column = "pos"
+# variant_y_column = "pvalue"
+# variant_marker_column = "MarkerName"
+# variant_ld_data <- fread(ld.file, data.table = F, stringsAsFactors = F)
+# variant_ld_ref = "20-61000005-A-G"
+# genome_build = "hg19"
+# variant_should_log = T
+# variant_horizontal_value = 5e-8
+# variant_horizontal_color = "red"
+# variant_horizontal_style = "dashed"
+# variant_background_color = "#e6550d"
+# variant_background_frame = T
+# variant_point_color = "#252525"
+# variant_title = "Waste hip ratio"
+# gene_highlight = "LYPLAL1"
+# gene_title = "Genomic Context"
+# gene_background_color = "#31a354"
+# gene_frame = T
+# bed_data <- list(fread(bed.file, data.table = F, stringsAsFactors = F))
+# bed_data[[1]][,1] <- sub("chr", "", bed_data[[1]][,1])
+# bed_titles = "Islet HMM"
+# bed_background_colors = c("#3182bd")
+# bed_frame = T
 
-makePlot(chr, start, end, variant_data, variant_chr_column, variant_pos_column, variant_y_column,
-         variant_marker_column,
-         variant_ld_data,
-         variant_ld_ref,
-         genome_build,
-         variant_should_log,
-         variant_horizontal_value,
-         variant_horizontal_color,
-         variant_horizontal_style,
-         variant_background_color,
-         variant_background_frame,
-         variant_point_color,
-         variant_title,
-         gene_highlight,
-         gene_title,
-         gene_background_color,
-         gene_frame,
-         bed_data, 
-         bed_titles,
-         bed_background_colors,
-         bed_frame)
+# makePlot(chr, start, end, variant_data, variant_chr_column, variant_pos_column, variant_y_column,
+#          variant_marker_column,
+#          variant_ld_data,
+#          variant_ld_ref,
+#          genome_build,
+#          variant_should_log,
+#          variant_horizontal_value,
+#          variant_horizontal_color,
+#          variant_horizontal_style,
+#          variant_background_color,
+#          variant_background_frame,
+#          variant_point_color,
+#          variant_title,
+#          gene_highlight,
+#          gene_title,
+#          gene_background_color,
+#          gene_frame,
+#          bed_data, 
+#          bed_titles,
+#          bed_background_colors,
+#          bed_frame)
