@@ -20,12 +20,10 @@ ui <- fluidPage(
 			     fluidRow(
 				      textInput("searchrange", h3("Search Range")),
 				      actionButton("submit", "Submit"),
-				      actionButton("down", "Download plot"))
+				      downloadButton(outputId="down", label="Download the plot"))
 			     ),
 		mainPanel(
-			  plotOutput("plot"),
-			  textOutput("comm"),
-			  tableOutput("dwnfiles")
+			  plotOutput("plot")
 			  )
 		)
 
@@ -33,34 +31,27 @@ ui <- fluidPage(
 server <- function(input, output, session) 
 {
 	setwd("/tmp")
+#	temp <- table(NA)
 	observeEvent(input$submit,
-		     {
-			     gspath <- input$gspath
-			     accesstoken <- input$accesstoken
-			     marker <- as.numeric(input$marker)
-			     chr <- as.numeric(input$chr)
-			     pos <- as.numeric(input$pos)
-			     pval <- as.numeric(input$pval)
-			     searchrange <- input$searchrange
-			     command <- paste0("export GCS_OAUTH_TOKEN=",accesstoken," ; /usr/local/htslib-1.9/bin/tabix ",gspath," ",searchrange)
-			     #output$selected_opt <- renderText(system(command,intern=TRUE))
-			     temp <- read.table(pipe(command))
-			     # output$selected_opt <- renderTable(temp)
-			     
-			     output$plot <- renderPlot(plot(temp[,pos], -log10(temp[,pval]), xlab="Position", ylab="Negative log of P-value"))
+	{
+		command <- paste0("export GCS_OAUTH_TOKEN=",input$accesstoken," ; /usr/local/htslib-1.9/bin/tabix ", input$gspath," ", input$searchrange)
+		#output$selected_opt <- renderText(system(command,intern=TRUE))
+		assign("temp", read.table(pipe(command)), envir = .GlobalEnv)
+		output$plot <- renderPlot(plot(temp[,as.numeric(input$pos)], -log10(temp[,as.numeric(input$pval)]), xlab="Position", ylab="Negative log of P-value"))
+	})
 
-	 observeEvent(input$down,
-		                           {
-						   png(paste0("Regional_plot_", searchrange, ".png"))
-						   plot(temp[,pos], -log10(temp[,pval]), xlab="Position", ylab="Negative log of P-value")
-						   dev.off()
-						   output$comm <- renderText("To copy the plot/s to host machine, run the following command/s after exiting the session -")
-						   files <- data.frame(file = readLines(pipe("ls -al | grep Regional")))
-						   files <- data.frame(Commands = paste0("docker cp visualization_app:/tmp/", substring(files$file, regexpr("Reg", files$file)), " ./", substring(files$file, regexpr("Reg", files$file)), "-CONTAINER_NAME.png"))
-						   output$dwnfiles <- renderTable(files)
-					   })
-	 		})
-	 		
+	output$down <- downloadHandler(
+				       filename = function()
+				       {
+					       paste0("Regional_plot_", input$searchrange, ".png")
+				       },
+				       content = function(file)
+				       {
+					       png(file)
+					       plot(temp[,as.numeric(input$pos)], -log10(temp[,as.numeric(input$pval)]), xlab="Position", ylab="Negative log of P-value")
+					       dev.off()
+				       }
+				       )	 		
 	    }
 
 options(shiny.port = 3838)
