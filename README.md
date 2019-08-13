@@ -90,16 +90,16 @@ Navigate to your web browser -
       MarkerName,chr,pos,ref,alt,minor.allele,maf,mac,n,pvalue,SNPID,BETA,SE,ALTFreq
  - Enter the range you want to search in. (For eg. 10:112948590-113048589)
  - Click Submit to view the plot
- - Click Download to download the plot as a .png file. (For eg. Regional_plot_10:112948590-113048589.png)
- - You can change the range and click submit to view and download the corresponding plots.
- - Once you are ready to exit the session, copy the docker links, below the plot, to copy the plot on to your local machine. For example: 
+ - Clicking the Download button will download the plot as a .png file (for eg. Regional_plot_10:112948590-113048589.png) in your docker environment. Additionally, it will also generate a list of commands for downloading your plot, from the docker environment to your local machine. You can keep plotting different regions and with each submit, a new download command will be appended to the list.
+ For example: 
  ```
    docker cp visualization_app:/tmp/Regional_plot_10:112948590-113048589.png ./Regional_plot_10:112948590-113048589.png-CONTAINER_NAME.png
  ```
+ - Once you are ready to exit the application, copy and save the commands displayed below the plot, to use them later. 
  
 Navigate back to your terminal - 
  - Type Ctrl+C on Windows or Command+C on Mac
- - Exit the docker session. **Note:** your docker container is still running on port 3838.
+ - Exit the docker session. **Note:** your docker container is still running on port 3838 so you can still download your plots.
  ```
    exit
  ```
