@@ -21,6 +21,7 @@ This application is designed to produce regional plots of a given search range f
 
 ## Execution
 ### Steps to be followed - 
+#### Building and running docker images
 Execute in your terminal - 
  - Clone this git repository to your local machine <br> 
  ```
@@ -46,6 +47,8 @@ Execute in your terminal -
  ```
    docker run --name visualization_app -ti -p 3838:80 manninglab/visualization_app /bin/bash 
  ```
+ 
+ #### Starting the application from a Docker container
  - You are now in the docker container. To execute the appfiles, start with the Google Cloud configuration setup <br>
  ```
    ./config_script 
@@ -70,7 +73,7 @@ Navigate to your web browser -
 Navigate back to your terminal - 
  - Paste the code and press enter - <br>
  ```
-   Enter verification code: 4/nQEUyDXiVSWV1v3oE1Tj7PPQRMIaLXJOCM-m_vFWOUi3kkfzhP5_S5s
+   Enter verification code: 4/nQEUyDXiVSWoOHoO3oE1Tj7PPQRMIaLXJOCM-m_vFWOUi3kkfzhP5_S5s
    
  ```
  - Enter (**Note:** you will not be able to see the typed characters)
@@ -82,12 +85,15 @@ Navigate back to your terminal -
    Access token
    ya29.GltjB01piVLyObuiAYK0gZmShRuTiXtKCS2BBaSIKa5qWKW6U-baZinGarINyB_9K_tW_zKJhBzwoUKNqFruFIQqxYKRrKE5L6bgPXO-kwk8xGUxwjE9eR1iZ4dK
  ```
-  
+#### Using the application
 Navigate to your web browser - 
- - Type in - http://127.0.0.1:3838/
+ - Go to http://127.0.0.1:3838/
  - Paste your access token in the input box
- - Enter the path to the summary statistics file containing the following columns - 
-      MarkerName,chr,pos,ref,alt,minor.allele,maf,mac,n,pvalue,SNPID,BETA,SE,ALTFreq
+ - Enter the path to the summary statistics file - 
+ ```
+   Something like this - 
+   gs://fc-91605a4c-df34-4248-b17v-ca123456e59/wgs-summary-stats-file.txt.gz
+ ```
  - Enter the range you want to search in. (For eg. 10:112948590-113048589)
  - Click Submit to view the plot
  - Clicking the Download button will download the plot as a .png file (for eg. Regional_plot_10:112948590-113048589.png) in your docker environment. Additionally, it will also generate a list of commands for downloading your plot, from the docker environment to your local machine. You can keep plotting different regions and with each submit, a new download command will be appended to the list.
@@ -97,6 +103,7 @@ Navigate to your web browser -
  ```
  - Once you are ready to exit the application, copy and save the commands displayed below the plot, to use them later. 
  
+#### Obtaining the regional plots
 Navigate back to your terminal - 
  - Type Ctrl+C on Windows or Command+C on Mac
  - Exit the docker session. **Note:** your docker container is still running on port 3838 so you can still download your plots.
