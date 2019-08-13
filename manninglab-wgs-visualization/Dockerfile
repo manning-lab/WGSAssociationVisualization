@@ -13,7 +13,9 @@ COPY shiny-server.sh /usr/bin/shiny-server.sh
 
 ADD config_script ./
 ADD login_script.sh ./
+ADD demo_script.sh ./
 
+RUN ["chmod", "+x", "./demo_script.sh"]
 RUN ["chmod", "+x", "/usr/bin/shiny-server.sh"]
 
 #CMD ["/usr/bin/shiny-server.sh"]
