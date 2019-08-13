@@ -31,11 +31,8 @@ ui <- fluidPage(
 server <- function(input, output, session) 
 {
 	setwd("/tmp")
-#	temp <- table(NA)
-#	path <- reactive({input$gspath})
-#	range <- reactive({input$searchrange})
-#	temp <- read.table(pipe(paste0("/usr/local/htslib-1.9/bin/tabix ", path(), " ", range()))) 
-#	output$plot <- renderPlot(plot(temp[,as.numeric(input$pos)], -log10(temp[,as.numeric(input$pval)]), xlab="Position", ylab="Negative log of P-value"))
+	temp <- read.table(pipe(paste0("/usr/local/htslib-1.9/bin/tabix 1kg-t2d.all.assoc.aug12.txt.gz 20:60900000-61100000"))) 
+	output$plot <- renderPlot(plot(temp[,3], -log10(temp[,9]), xlab="Position", ylab="Negative log of P-value"))
 	observeEvent(input$submit,
 	{
 		if(input$gspath == "1kg-t2d.all.assoc.aug12.txt.gz")
