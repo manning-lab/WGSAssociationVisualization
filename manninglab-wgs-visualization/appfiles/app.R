@@ -6,10 +6,21 @@ ui <- fluidPage(
 			     # Adding input box, buttons and drop-down list
 			     fluidRow(
 				      textInput("accesstoken", h3("Access token")),
-				      textInput("gspath", h3("Enter Path to file")),
+				      textInput("gspath", h3("Enter Path to file"))
+				      ),
+			     fluidRow(
+				      h4("Enter column numbers for -"),
+				      column(4, textInput("marker","Markername")),
+				      column(4, textInput("chr","Chromosome"))
+				      ),
+			     fluidRow(
+				      column(4, textInput("pos","Position")),
+				      column(4, textInput("pval","P-value"))
+				      ),
+			     fluidRow(
 				      textInput("searchrange", h3("Search Range")),
 				      actionButton("submit", "Submit"),
-				      actionButton("down", "Download plot")) 
+				      actionButton("down", "Download plot"))
 			     ),
 		mainPanel(
 			  plotOutput("plot"),
@@ -26,18 +37,22 @@ server <- function(input, output, session)
 		     {
 			     gspath <- input$gspath
 			     accesstoken <- input$accesstoken
+			     marker <- as.numeric(input$marker)
+			     chr <- as.numeric(input$chr)
+			     pos <- as.numeric(input$pos)
+			     pval <- as.numeric(input$pval)
 			     searchrange <- input$searchrange
 			     command <- paste0("export GCS_OAUTH_TOKEN=",accesstoken," ; /usr/local/htslib-1.9/bin/tabix ",gspath," ",searchrange)
 			     #output$selected_opt <- renderText(system(command,intern=TRUE))
 			     temp <- read.table(pipe(command))
 			     # output$selected_opt <- renderTable(temp)
 			     
-			     output$plot <- renderPlot(plot(temp$V3, -log10(temp$V10), xlab="Position", ylab="Negative log of P-value"))
+			     output$plot <- renderPlot(plot(temp[,pos], -log10(temp[,pval]), xlab="Position", ylab="Negative log of P-value"))
 
 	 observeEvent(input$down,
 		                           {
 						   png(paste0("Regional_plot_", searchrange, ".png"))
-						   plot(temp$V3, -log10(temp$V10), xlab="Position", ylab="Negative log of P-value")
+						   plot(temp[,pos], -log10(temp[,pval]), xlab="Position", ylab="Negative log of P-value")
 						   dev.off()
 						   output$comm <- renderText("To copy the plot/s to host machine, run the following command/s after exiting the session -")
 						   files <- data.frame(file = readLines(pipe("ls -al | grep Regional")))
