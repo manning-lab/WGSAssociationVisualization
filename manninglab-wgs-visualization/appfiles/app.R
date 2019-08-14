@@ -8,7 +8,8 @@ ui <- fluidPage(
 			     # Adding input box, buttons and drop-down list
 			     fluidRow(
 				      textInput("accesstoken", h3("Access token")),
-				      textInput("gspath", h3("Enter Path to file"), value="1kg-t2d.all.assoc.aug12.txt.gz")
+				      textInput("gspath", h3("Enter path to file"), value="1kg-t2d.all.assoc.aug12.txt.gz"),
+				      textInput("ldpath", h3("Enter path to LD file (optional)"), value="NULL")
 				      ),
 			     fluidRow(
 				      h4("Enter column numbers for -"),
@@ -20,6 +21,7 @@ ui <- fluidPage(
 				      column(4, textInput("pval","P-value", value="9"))
 				      ),
 			     fluidRow(
+				      textInput("ldref", h3("LD reference variant"), value="NULL"),
 				      textInput("searchrange", h3("Search Range"), value="20:60900000-61100000"),
 				      actionButton("submit", "View plot"),
 				      downloadButton(outputId="down", label="Download the plot"))
@@ -48,11 +50,19 @@ server <- function(input, output, session)
 			#output$selected_opt <- renderText(system(command,intern=TRUE))
 			assign("temp", data.frame(read.table(pipe(command))), envir = .GlobalEnv)
 			# output$plot <- renderPlot(plot(temp[,as.numeric(input$pos)], -log10(temp[,as.numeric(input$pval)]), xlab="Position", ylab="Negative log of P-value"))	
+			if(input$ldpath != "NULL")
+			{
+				ld_data <- load_ld(input$ldpath, input$ldref)
+			}
+			else
+			{
+				ld_data <- NULL
+			}
 			search_list <- unlist(strsplit(input$searchrange, "[[:punct:]]"))
 			chr <- as.numeric(search_list[1])
 			start <- as.numeric(search_list[2])
 			end <- as.numeric(search_list[3])
-			output$plot <- renderPlot(make_regional_plot(chr=chr, start=start, end=end, variant_data=temp, variant_chr_column=paste0("V", input$chr), variant_pos_column=paste0("V", input$pos), variant_y_column=paste0("V", input$pval)))
+			output$plot <- renderPlot(make_regional_plot(chr=chr, start=start, end=end, variant_data=temp, variant_chr_column=paste0("V", input$chr), variant_pos_column=paste0("V", input$pos), variant_y_column=paste0("V", input$pval), variant_marker_column = paste0("V", input$marker), variant_ld_data = ld_data, variant_ld_ref = input$ldref))
 		}
 	})
 
