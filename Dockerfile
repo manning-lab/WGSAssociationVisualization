@@ -1,5 +1,11 @@
-FROM rocker/r-ver:3.6.0
+# Using multi-stage builds feature of Docker (this feature requires Docker 17.05 or higher on the daemon and client)
+# Importing and installing Bioconductor packages
+FROM bioconductor/release_core2
+WORKDIR /tmp
+RUN R -e "BiocManager::install(c(\"biomaRt\", \"GenomicRanges\", \"Gviz\"), lib=\"/usr/local/lib/R/site-library/\")"
+RUN R -e "install.packages(c('data.table', 'devtools'), dependencies=TRUE, repos='http://cran.rstudio.com/'); devtools::install_github(\"manning-lab/WGSregionalPlot\")"
 
+FROM rocker/r-ver:3.6.0
 # The code below was taken from: https://stackoverflow.com/questions/28372328/how-to-install-the-google-cloud-sdk-in-a-docker-image
 
 RUN apt-get update && apt-get install -qqy \
@@ -51,3 +57,11 @@ RUN wget --no-verbose https://download3.rstudio.org/ubuntu-14.04/x86_64/VERSION 
 # Install R packages that are required
 # TODO: add further package if you need!
 RUN R -e "install.packages(c('shiny', 'shinydashboard'), repos='http://cran.rstudio.com/')"
+
+COPY --from=0 /usr/local/lib/R/site-library/ /usr/local/lib/R/site-library/
+
+# Using multi-stage builds feature of Docker (this feature requires Docker 17.05 or higher on the daemon and client)
+# Importing and installing Bioconductor packages
+# FROM bioconductor/release_core2
+# WORKDIR /tmp
+# RUN Rscript -e "BiocManager::install(c(\"biomaRt\", \"GenomicRanges\", \"Gviz\"))"

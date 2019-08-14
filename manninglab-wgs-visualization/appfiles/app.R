@@ -1,5 +1,6 @@
 library(shiny)
-source("regional.plot.v1.R")
+# source("regional.plot.v1.R")
+library(WGSregionalPlot)
 
 ui <- fluidPage(
 		titlePanel("Visualization using R Shiny"),
@@ -45,8 +46,13 @@ server <- function(input, output, session)
 		{
 			command <- paste0("export GCS_OAUTH_TOKEN=",input$accesstoken," ; /usr/local/htslib-1.9/bin/tabix ", input$gspath," ", input$searchrange)
 			#output$selected_opt <- renderText(system(command,intern=TRUE))
-			assign("temp", read.table(pipe(command)), envir = .GlobalEnv)
-			output$plot <- renderPlot(plot(temp[,as.numeric(input$pos)], -log10(temp[,as.numeric(input$pval)]), xlab="Position", ylab="Negative log of P-value"))		
+			assign("temp", data.frame(read.table(pipe(command))), envir = .GlobalEnv)
+			# output$plot <- renderPlot(plot(temp[,as.numeric(input$pos)], -log10(temp[,as.numeric(input$pval)]), xlab="Position", ylab="Negative log of P-value"))	
+			search_list <- unlist(strsplit(input$searchrange, "[[:punct:]]"))
+			chr <- as.numeric(search_list[1])
+			start <- as.numeric(search_list[2])
+			end <- as.numeric(search_list[3])
+			output$plot <- renderPlot(make_regional_plot(chr=chr, start=start, end=end, variant_data=temp, variant_chr_column=paste0("V", input$chr), variant_pos_column=paste0("V", input$pos), variant_y_column=paste0("V", input$pval)))
 		}
 	})
 
