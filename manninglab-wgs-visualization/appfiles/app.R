@@ -36,13 +36,18 @@ server <- function(input, output, session)
 {
 	setwd("/tmp")
 	temp <- read.table(pipe(paste0("/usr/local/htslib-1.9/bin/tabix 1kg-t2d.all.assoc.aug12.txt.gz 20:60900000-61100000"))) 
-	output$plot <- renderPlot(plot(temp[,3], -log10(temp[,9]), xlab="Position", ylab="Negative log of P-value"))
+	output$plot <- renderPlot(make_regional_plot(chr=20, start=60900000, end=61100000, variant_data=temp, variant_chr_column="V2",
+						     variant_pos_column="V3", variant_y_column="V9", variant_marker_column = "V1",
+			  			     variant_ld_data = NULL, variant_ld_ref = NULL))
 	observeEvent(input$submit,
 	{
 		if(input$gspath == "1kg-t2d.all.assoc.aug12.txt.gz")
 		{
 			temp <- read.table(pipe(paste0("/usr/local/htslib-1.9/bin/tabix ", input$gspath, " ", input$searchrange)))
-			output$plot <- renderPlot(plot(temp[,as.numeric(input$pos)], -log10(temp[,as.numeric(input$pval)]), xlab="Position", ylab="Negative log of P-value"))
+			# output$plot <- renderPlot(plot(temp[,as.numeric(input$pos)], -log10(temp[,as.numeric(input$pval)]), xlab="Position", ylab="Negative log of P-value"))
+			output$plot <- renderPlot(make_regional_plot(chr=20, start=60900000, end=61100000, variant_data=temp, variant_chr_column="V2", 
+								     variant_pos_column="V3", variant_y_column="V9", variant_marker_column = "V1", 
+								     variant_ld_data = input$ldpath, variant_ld_ref = input$ldref))
 		}
 		else
 		{
@@ -52,7 +57,7 @@ server <- function(input, output, session)
 			# output$plot <- renderPlot(plot(temp[,as.numeric(input$pos)], -log10(temp[,as.numeric(input$pval)]), xlab="Position", ylab="Negative log of P-value"))	
 			if(input$ldpath != "NULL")
 			{
-				ld_data <- load_ld(input$ldpath, input$ldref)
+				ld_data <- load_ld(df = input$ldpath, input$ldref)
 			}
 			else
 			{
