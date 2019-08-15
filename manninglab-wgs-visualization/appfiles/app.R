@@ -1,7 +1,7 @@
 library(shiny)
 library(WGSregionalPlot)
 
-makePlot <- function(temp, input)
+makePlot <- function(temp, input, output)
 {
 	if(startsWith(input$ldpath, "gs:"))
 	{
@@ -20,6 +20,8 @@ makePlot <- function(temp, input)
 	chr <- as.numeric(search_list[1])
 	start <- as.numeric(search_list[2])
 	end <- as.numeric(search_list[3])
+
+	output$topvars <- renderTable(head(temp[order(temp[,paste0("V", input$pval)]),], 10))
 
 	make_regional_plot(chr=chr, start=start, end=end, variant_data=temp, variant_chr_column=paste0("V", input$chr),
 			   variant_pos_column=paste0("V", input$pos), variant_y_column=paste0("V", input$pval),
@@ -52,7 +54,8 @@ ui <- fluidPage(
 				      downloadButton(outputId="down", label="Download the plot"))
 			     ),
 		mainPanel(
-			  plotOutput("plot")
+			  plotOutput("plot"),
+			  tableOutput("topvars")
 			  )
 		)
 
@@ -64,6 +67,7 @@ server <- function(input, output, session)
 	output$plot <- renderPlot(make_regional_plot(chr=20, start=60900000, end=61100000, variant_data=temp, variant_chr_column="V2",
 						     variant_pos_column="V3", variant_y_column="V9", variant_marker_column = "V1",
 			  			     variant_ld_data = NULL, variant_ld_ref = NULL))
+	output$topvars <- renderTable(head(temp[order(temp[,"V9"]),], 10))
 
 	observeEvent(input$submit,
 	{
@@ -71,14 +75,14 @@ server <- function(input, output, session)
 		{
 			temp <- read.table(pipe(paste0("/usr/local/htslib-1.9/bin/tabix ", input$gspath, " ", input$searchrange)))
 
-			output$plot <- renderPlot(makePlot(temp, input))
+			output$plot <- renderPlot(makePlot(temp, input, output))
 		}
 		else
 		{
 			command <- paste0("export GCS_OAUTH_TOKEN=",input$accesstoken," ; /usr/local/htslib-1.9/bin/tabix ", input$gspath," ", input$searchrange)
 			assign("temp", data.frame(read.table(pipe(command))), envir = .GlobalEnv)
 			
-			output$plot <- renderPlot(makePlot(temp, input))
+			output$plot <- renderPlot(makePlot(temp, input, output))
 		}
 	})
 
@@ -90,7 +94,7 @@ server <- function(input, output, session)
 				       content = function(file)
 				       {
 					       png(file)
-					       makePlot(temp, input)
+					       makePlot(temp, input, output)
 					       dev.off()
 				       }
 				       )	 		
