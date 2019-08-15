@@ -9,21 +9,11 @@ This application is designed to produce regional plots of a given search range f
 
 ### Data required to run this application
  - WGS summary statistics file in bgzipped (.gz) format residing in a Google bucket to which you have access. <br>
- The file should contain columns similar to following list of column headers -
+ The file should contain at least the following columns:
    - MarkerName: unique variant identifier (ex: rsID or chr_pos_ref_alt)
    - chr: chromosome
    - pos: variant position
-   - ref: reference allele
-   - alt: alternate allele
-   - minor.allele: “ref” or “alt”, which is the less frequent allele?
-   - maf: minor allele frequence
-   - mac: minor allele count
-   - n: number of sample observations
    - pvalue: p-value
-   - SNPID: unique variant identifier (ex: rsID or chr_pos_ref_alt)
-   - BETA: effect estimate
-   - SE: error estimate
-   - ALTFreq: alternate allele frequency
    <br>
  - A tabix indexed file in (.gz.tbi) format in the same location.
  
@@ -64,7 +54,7 @@ Execute in your terminal -
    docker run --rm --name visualization_app -ti -p 3838:80 manninglab/visualization_app /bin/bash 
  ```
  
- #### Running a demo version
+ #### Running a demo session
  - You are now in the docker container. To execute the demo: <br>
  ```
    ./demo_script 
@@ -73,8 +63,25 @@ Execute in your terminal -
  Navigate to your web browser - 
  - Go to http://127.0.0.1:3838/
  
+ Give the plot a minute to generate. <br>
+ 
+ - Optionally, change the range you want to search in. 
+ - Click Submit to view the plot
+ - Clicking the Download button will download the plot as a .png file (for eg. Regional_plot_20:60900000-61100000.png) 
+ 
+ #### Exiting the demo session
+Navigate back to your terminal - 
+ - Type Ctrl+C on Windows or Command+C on Mac <br>
+ 
+ If you wish to run the app using your data in the Google bucket, follow the next steps. <br>
+ 
+ If not, to exit the docker session:
+ ```
+   exit
+ ```
+ 
  #### Starting the application from a Docker container
- - You are now in the docker container. To execute the appfiles, start with the Google Cloud configuration setup <br>
+ - You are still in the docker container. To execute the appfiles, start with the Google Cloud configuration setup <br>
  ```
    ./config_script 
  ```
@@ -119,15 +126,15 @@ Navigate to your web browser -
    Something like this - 
    gs://fc-91605a4c-df34-4248-b17v-ca123456e59/wgs-summary-stats-file.txt.gz
  ```
- - Enter the columns numbers for the Marker name (a unique variant identifier), chromosome of the variant, position of the variant and p-value of the variant. For eg. for the column headers given in the description, the input would be 1, 2, 3 and 10 respectively.
- - Enter the range you want to search in. (For eg. 10:112948590-113048589)
+ - Enter the columns numbers for the Marker name (a unique variant identifier), chromosome of the variant, position of the variant and p-value of the variant. For eg. for the demo file, the input would be 1, 2, 3 and 9 respectively.
+ - Enter the range you want to search in. (For eg. 20:60900000-61100000)
  - Click Submit to view the plot
  - Clicking the Download button will download the plot as a .png file (for eg. Regional_plot_10:112948590-113048589.png) 
  
 #### Exiting the docker container
 Navigate back to your terminal - 
  - Type Ctrl+C on Windows or Command+C on Mac
- - Exit the docker session. 
+ - Exit the docker session:
  ```
    exit
  ```
