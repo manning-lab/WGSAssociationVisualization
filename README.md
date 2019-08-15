@@ -64,6 +64,15 @@ Execute in your terminal -
    docker run --rm --name visualization_app -ti -p 3838:80 manninglab/visualization_app /bin/bash 
  ```
  
+ #### Running a demo version
+ - You are now in the docker container. To execute the demo: <br>
+ ```
+   ./demo_script 
+ ```
+ 
+ Navigate to your web browser - 
+ - Go to http://127.0.0.1:3838/
+ 
  #### Starting the application from a Docker container
  - You are now in the docker container. To execute the appfiles, start with the Google Cloud configuration setup <br>
  ```
