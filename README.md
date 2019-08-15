@@ -57,7 +57,7 @@ Execute in your terminal -
  #### Running a demo session
  - You are now in the docker container. To execute the demo: <br>
  ```
-   ./demo_script 
+   ./demo_script.sh 
  ```
  
  Navigate to your web browser - 
