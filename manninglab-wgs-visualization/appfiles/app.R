@@ -1,13 +1,38 @@
 library(shiny)
-# source("regional.plot.v1.R")
 library(WGSregionalPlot)
+
+makePlot <- function(temp, input)
+{
+	if(startsWith(input$ldpath, "gs:"))
+	{
+		ld_data <- load_ld(df = input$ldpath, input$ldref)
+	}
+	else if(input$ldpath != "NULL")
+	{
+		ld_data <- load_ld(file = input$ldpath, input$ldref)
+	}
+	else
+	{
+		ld_data <- NULL
+	}
+
+	search_list <- unlist(strsplit(input$searchrange, "[[:punct:]]"))
+	chr <- as.numeric(search_list[1])
+	start <- as.numeric(search_list[2])
+	end <- as.numeric(search_list[3])
+
+	make_regional_plot(chr=chr, start=start, end=end, variant_data=temp, variant_chr_column=paste0("V", input$chr),
+			   variant_pos_column=paste0("V", input$pos), variant_y_column=paste0("V", input$pval),
+			   variant_marker_column = paste0("V", input$marker),
+			   variant_ld_data = ld_data, variant_ld_ref = input$ldref)
+}
 
 ui <- fluidPage(
 		titlePanel("Visualization using R Shiny"),
 		sidebarPanel(
 			     # Adding input box, buttons and drop-down list
 			     fluidRow(
-				      textInput("accesstoken", h3("Access token")),
+				      textInput("accesstoken", h3("Access token"), value="NULL"),
 				      textInput("gspath", h3("Enter path to file"), value="1kg-t2d.all.assoc.aug12.txt.gz"),
 				      textInput("ldpath", h3("Enter path to LD file (optional)"), value="NULL")
 				      ),
@@ -39,35 +64,21 @@ server <- function(input, output, session)
 	output$plot <- renderPlot(make_regional_plot(chr=20, start=60900000, end=61100000, variant_data=temp, variant_chr_column="V2",
 						     variant_pos_column="V3", variant_y_column="V9", variant_marker_column = "V1",
 			  			     variant_ld_data = NULL, variant_ld_ref = NULL))
+
 	observeEvent(input$submit,
 	{
 		if(input$gspath == "1kg-t2d.all.assoc.aug12.txt.gz")
 		{
 			temp <- read.table(pipe(paste0("/usr/local/htslib-1.9/bin/tabix ", input$gspath, " ", input$searchrange)))
-			# output$plot <- renderPlot(plot(temp[,as.numeric(input$pos)], -log10(temp[,as.numeric(input$pval)]), xlab="Position", ylab="Negative log of P-value"))
-			output$plot <- renderPlot(make_regional_plot(chr=20, start=60900000, end=61100000, variant_data=temp, variant_chr_column="V2", 
-								     variant_pos_column="V3", variant_y_column="V9", variant_marker_column = "V1", 
-								     variant_ld_data = input$ldpath, variant_ld_ref = input$ldref))
+
+			output$plot <- renderPlot(makePlot(temp, input))
 		}
 		else
 		{
 			command <- paste0("export GCS_OAUTH_TOKEN=",input$accesstoken," ; /usr/local/htslib-1.9/bin/tabix ", input$gspath," ", input$searchrange)
-			#output$selected_opt <- renderText(system(command,intern=TRUE))
 			assign("temp", data.frame(read.table(pipe(command))), envir = .GlobalEnv)
-			# output$plot <- renderPlot(plot(temp[,as.numeric(input$pos)], -log10(temp[,as.numeric(input$pval)]), xlab="Position", ylab="Negative log of P-value"))	
-			if(input$ldpath != "NULL")
-			{
-				ld_data <- load_ld(df = input$ldpath, input$ldref)
-			}
-			else
-			{
-				ld_data <- NULL
-			}
-			search_list <- unlist(strsplit(input$searchrange, "[[:punct:]]"))
-			chr <- as.numeric(search_list[1])
-			start <- as.numeric(search_list[2])
-			end <- as.numeric(search_list[3])
-			output$plot <- renderPlot(make_regional_plot(chr=chr, start=start, end=end, variant_data=temp, variant_chr_column=paste0("V", input$chr), variant_pos_column=paste0("V", input$pos), variant_y_column=paste0("V", input$pval), variant_marker_column = paste0("V", input$marker), variant_ld_data = ld_data, variant_ld_ref = input$ldref))
+			
+			output$plot <- renderPlot(makePlot(temp, input))
 		}
 	})
 
@@ -79,7 +90,7 @@ server <- function(input, output, session)
 				       content = function(file)
 				       {
 					       png(file)
-					       plot(temp[,as.numeric(input$pos)], -log10(temp[,as.numeric(input$pval)]), xlab="Position", ylab="Negative log of P-value")
+					       makePlot(temp, input)
 					       dev.off()
 				       }
 				       )	 		
