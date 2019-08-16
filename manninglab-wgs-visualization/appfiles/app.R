@@ -20,8 +20,10 @@ makePlot <- function(temp, input, output)
 	chr <- as.numeric(search_list[1])
 	start <- as.numeric(search_list[2])
 	end <- as.numeric(search_list[3])
-
-	output$topvars <- renderTable(head(temp[order(temp[,paste0("V", input$pval)]),], 10))
+	disp <- head(temp[order(temp[,paste0("V", input$pval)]), c(as.numeric(input$marker), as.numeric(input$chr), as.numeric(input$pos), as.numeric(input$pval))], 10)
+	disp <- data.frame("Marker Name"=as.character(disp[,1]), "Chromosome"=as.character(disp[,2]), "Position"=as.character(disp[,3]), "P-value"=disp[,4])
+	colnames(disp) <- c("Marker Name", "Chromosome", "Position", "P-value")
+	output$topvars <- renderTable(disp, digits=-1)
 
 	make_regional_plot(chr=chr, start=start, end=end, variant_data=temp, variant_chr_column=paste0("V", input$chr),
 			   variant_pos_column=paste0("V", input$pos), variant_y_column=paste0("V", input$pval),
@@ -30,9 +32,9 @@ makePlot <- function(temp, input, output)
 }
 
 ui <- fluidPage(
-		titlePanel("Visualization using R Shiny"),
+		titlePanel("Manning Lab - WGS Association Visualization"),
 		sidebarPanel(
-			     # Adding input box, buttons and drop-down list
+			     # Adding input boxes and buttons
 			     fluidRow(
 				      textInput("accesstoken", h3("Access token"), value="NULL"),
 				      textInput("gspath", h3("Enter path to file"), value="1kg-t2d.all.assoc.aug12.txt.gz"),
@@ -67,7 +69,10 @@ server <- function(input, output, session)
 	output$plot <- renderPlot(make_regional_plot(chr=20, start=60900000, end=61100000, variant_data=temp, variant_chr_column="V2",
 						     variant_pos_column="V3", variant_y_column="V9", variant_marker_column = "V1",
 			  			     variant_ld_data = NULL, variant_ld_ref = NULL))
-	output$topvars <- renderTable(head(temp[order(temp[,"V9"]),], 10))
+	disp <- head(temp[order(temp[,"V9"]), c(1,2,3,9)], 10)
+	disp <- data.frame("Marker Name"=as.character(disp[,1]), "Chromosome"=as.character(disp[,2]), "Position"=as.character(disp[,3]), "P-value"=disp[,4])
+	colnames(disp) <- c("Marker Name", "Chromosome", "Position", "P-value")
+	output$topvars <- renderTable(disp, digits=-1)
 
 	observeEvent(input$submit,
 	{
