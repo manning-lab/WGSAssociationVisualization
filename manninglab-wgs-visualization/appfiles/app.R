@@ -1,5 +1,4 @@
 library(shiny)
-library(shinyalert)
 library(shinyBS)
 library(WGSregionalPlot)
 
@@ -10,24 +9,18 @@ get_tabix_df <- function(file=NULL, searchrange=NULL, command=NULL, output)
 		if(!is.null(command))
 		{
 			comm_list <- unlist(strsplit(command, " "))
-			#output$error <- renderText(paste("Tabix using:", comm_list[5], "and", comm_list[6]))
 			res_list <- list(value = withCallingHandlers(tryCatch(read.table(pipe(command)), 
 									      error=function(e){ E<<-paste("E: ", e) }), 
 								     warning=function(w){ W<<-w }),warning = W, error = E)
 			return(res_list)
-			#ifelse(grep(":", res_list$value, invert=T)==1, break, next)
 		}
 		else
 		{
-			#output$error <- renderText(paste("Tabix using:", file, "and", searchrange))
-#			df <- read.table(pipe(paste("/usr/local/htslib-1.9/bin/tabix", file, searchrange)))
 			res_list <- list(value = withCallingHandlers(tryCatch(read.table(pipe(paste("/usr/local/htslib-1.9/bin/tabix", file, searchrange))), 
 									      error=function(e){ E<<-paste("E: ", e) }), 
 								     warning=function(w){ W<<-w }), warning = W, error = E)
 			return(res_list)
-			#ifelse(grep(":", res_list$value, invert=T)==1, break, next)
 		}	
-#	return(res_list$value)
 }
 
 makePlot <- function(temp, input, output)
