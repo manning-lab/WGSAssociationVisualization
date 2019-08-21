@@ -6,18 +6,44 @@ get_tabix_df <- function(file=NULL, searchrange=NULL, command=NULL)
 {
   W = NULL
   E = NULL
+  e.handler <- function(e){
+    if(!is.null(command) && grep(": no lines available in input", paste(e, collapse = " ")) == 1)
+    {
+      E <<- "Tabix failed due to reason: File at given path cannot be opened or accessed"
+    }
+    else {
+    if(!is.null(command))
+    {
+      comm_list <- unlist(strsplit(command, " "))
+      searchrange <- comm_list[length(comm_list)]
+    }
+    search_list <- unlist(strsplit(searchrange, "[[:punct:]]"))
+    
+    if(as.numeric(search_list[2]) > as.numeric(search_list[3]))
+    {
+      E <<- "Tabix failed due to reason: Start of searchrange cannot be greater than end of searchrange"
+    }
+    else if(grep(": no lines available in input", paste(e, collapse = " ")) == 1)
+    {
+      E <<- "Tabix failed due to reason: No values found in given searchrange"
+    }
+    else
+    {
+      E <<- paste("Weird error: ", e)
+    }
+    }
+  }
   if(!is.null(command))
   {
-    comm_list <- unlist(strsplit(command, " "))
     res_list <- list(value = withCallingHandlers(tryCatch(read.table(pipe(command)), 
-                                                          error=function(e){ E<<-paste("E: ", e) }), 
+                                                          error=e.handler), 
                                                  warning=function(w){ W<<-w }),warning = W, error = E)
     return(res_list)
   }
   else
   {
     res_list <- list(value = withCallingHandlers(tryCatch(read.table(pipe(paste("/usr/local/htslib-1.9/bin/tabix", file, searchrange))), 
-                                                          error=function(e){ E<<-paste("E: ", e) }), 
+                                                          error=e.handler), 
                                                  warning=function(w){ W<<-w }), warning = W, error = E)
     return(res_list)
   }	
