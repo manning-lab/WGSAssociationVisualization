@@ -1,5 +1,34 @@
 library(shiny)
+library(shinyalert)
+library(shinyBS)
 library(WGSregionalPlot)
+
+get_tabix_df <- function(file=NULL, searchrange=NULL, command=NULL, output)
+{
+		W = NULL
+		E = NULL
+		if(!is.null(command))
+		{
+			comm_list <- unlist(strsplit(command, " "))
+			#output$error <- renderText(paste("Tabix using:", comm_list[5], "and", comm_list[6]))
+			res_list <- list(value = withCallingHandlers(tryCatch(read.table(pipe(command)), 
+									      error=function(e){ E<<-paste("E: ", e) }), 
+								     warning=function(w){ W<<-w }),warning = W, error = E)
+			return(res_list)
+			#ifelse(grep(":", res_list$value, invert=T)==1, break, next)
+		}
+		else
+		{
+			#output$error <- renderText(paste("Tabix using:", file, "and", searchrange))
+#			df <- read.table(pipe(paste("/usr/local/htslib-1.9/bin/tabix", file, searchrange)))
+			res_list <- list(value = withCallingHandlers(tryCatch(read.table(pipe(paste("/usr/local/htslib-1.9/bin/tabix", file, searchrange))), 
+									      error=function(e){ E<<-paste("E: ", e) }), 
+								     warning=function(w){ W<<-w }), warning = W, error = E)
+			return(res_list)
+			#ifelse(grep(":", res_list$value, invert=T)==1, break, next)
+		}	
+#	return(res_list$value)
+}
 
 makePlot <- function(temp, input, output)
 {
@@ -39,6 +68,7 @@ makePlot <- function(temp, input, output)
 }
 
 ui <- fluidPage(
+		useShinyalert(),
 		titlePanel("Manning Lab - WGS Association Visualization"),
 		sidebarPanel(
 			     # Adding input boxes and buttons
@@ -66,6 +96,7 @@ ui <- fluidPage(
 				      downloadButton(outputId="down", label="Download the plot"))
 			     ),
 		mainPanel(
+			  bsAlert("alert"),
 			  plotOutput("plot"),
 			  tableOutput("topvars")
 			  )
@@ -75,7 +106,8 @@ ui <- fluidPage(
 server <- function(input, output, session) 
 {
 	setwd("/tmp")
-	temp <- read.table(pipe(paste0("/usr/local/htslib-1.9/bin/tabix 1kg-t2d.all.assoc.aug12.txt.gz 20:60900000-61100000"))) 
+	res_list <- get_tabix_df(file="1kg-t2d.all.assoc.aug12.txt.gz", searchrange="20:60900000-61100000", output=output)
+	temp <- res_list$value
 	output$plot <- renderPlot(make_regional_plot(chr=20, start=60900000, end=61100000, variant_data=temp, variant_chr_column="V2",
 						     variant_pos_column="V3", variant_y_column="V9", variant_marker_column = "V1",
 			  			     variant_ld_data = load_ld(file = "1kg-t2d.chr20_60.9M-61.1M.ld.csv", "20-61000005-A-G"), 
@@ -85,22 +117,48 @@ server <- function(input, output, session)
 	colnames(disp) <- c("Marker Name", "Chromosome", "Position", "P-value")
 	output$topvars <- renderTable(disp, digits=-1)
 
-	observeEvent(input$submit,
+	plot <- eventReactive(input$submit,
 	{
 		if(input$gspath == "")
 		{
-			temp <- read.table(pipe(paste0("/usr/local/htslib-1.9/bin/tabix 1kg-t2d.all.assoc.aug12.txt.gz ", input$searchrange)))
-
-			output$plot <- renderPlot(makePlot(temp, input, output))
+			res_list <- get_tabix_df(file="1kg-t2d.all.assoc.aug12.txt.gz ", searchrange=input$searchrange, output=output)
+			if(!is.null(res_list$warning))
+			{
+				createAlert(session, "alert", "errorAlert", title = "Warning", content = res_list$warning, append = FALSE)
+				output$topvars <- renderTable(data.frame())
+			}
+			else if(!is.null(res_list$error))
+			{
+				createAlert(session, "alert", "errorAlert", title = "Error", content = res_list$error, append = FALSE)
+				output$topvars <- renderTable(data.frame())
+			}
+			else
+			{
+				closeAlert(session, "errorAlert")
+				makePlot(res_list$value, input, output)
+			}
 		}
 		else
 		{
 			command <- paste0("export GCS_OAUTH_TOKEN=",input$accesstoken," ; /usr/local/htslib-1.9/bin/tabix ", input$gspath," ", input$searchrange)
-			assign("temp", data.frame(read.table(pipe(command))), envir = .GlobalEnv)
-			
-			output$plot <- renderPlot(makePlot(temp, input, output))
+			res_list <- get_tabix_df(command=command, output=output)
+			if(!is.null(res_list$warning))
+			{
+				createAlert(session, "alert", "errorAlert", title = "Warning", content = res_list$warning, append = FALSE)
+			}
+			else if(!is.null(res_list$error))
+			{
+				createAlert(session, "alert", "errorAlert", title = "Error", content = res_list$error, append = FALSE)
+			}
+			else
+			{
+				closeAlert(session, "errorAlert")
+				makePlot(res_list$value, input, output)
+			}
 		}
 	})
+
+	output$plot <- renderPlot({ plot ()})
 
 	output$down <- downloadHandler(
 				       filename = function()
@@ -110,11 +168,11 @@ server <- function(input, output, session)
 				       content = function(file)
 				       {
 					       png(file)
-					       makePlot(temp, input, output)
+					       makePlot(res_list$value, input, output)
 					       dev.off()
 				       }
 				       )	 		
-	    }
+}
 
 options(shiny.port = 3838)
 shinyApp(ui = ui, server = server)
