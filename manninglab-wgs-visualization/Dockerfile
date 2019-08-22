@@ -22,7 +22,5 @@ RUN ["chmod", "+x", "./config_script"]
 RUN ["chmod", "+x", "./login_script.sh"]
 RUN ["chmod", "+x", "/usr/bin/shiny-server.sh"]
 
-# COPY appfiles /tmp
-
 #CMD ["/usr/bin/shiny-server.sh"]
 #ENTRYPOINT ["./config_script"]
