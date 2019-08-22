@@ -11,15 +11,18 @@ RUN ln -s /usr/local/gcloud/google-cloud-sdk/bin/gcloud /usr/bin/gcloud
 
 COPY shiny-server.sh /usr/bin/shiny-server.sh
 
+COPY appfiles /tmp
+
 ADD config_script ./
 ADD login_script.sh ./
 ADD demo_script.sh ./
 
 RUN ["chmod", "+x", "./demo_script.sh"]
 RUN ["chmod", "+x", "./config_script"]
+RUN ["chmod", "+x", "./login_script.sh"]
 RUN ["chmod", "+x", "/usr/bin/shiny-server.sh"]
 
-COPY appfiles /tmp
+# COPY appfiles /tmp
 
 #CMD ["/usr/bin/shiny-server.sh"]
 #ENTRYPOINT ["./config_script"]
