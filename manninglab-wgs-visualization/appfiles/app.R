@@ -7,7 +7,8 @@ get_tabix_df <- function(file=NULL, searchrange=NULL, command=NULL)
   W = NULL
   E = NULL
   e.handler <- function(e){
-    if(!is.null(command) && grep(": no lines available in input", paste(e, collapse = " ")) == 1)
+	  cat(file=stderr(), paste(e, collapse = ", "))
+    if(!is.null(command) && grep("command", paste(e, collapse = " ")) == 1)
     {
       E <<- "Tabix failed due to reason: File at given path cannot be opened or accessed"
     }
@@ -31,7 +32,7 @@ get_tabix_df <- function(file=NULL, searchrange=NULL, command=NULL)
     {
       E <<- paste("Weird error: ", e)
     }
-    }
+   }
   }
   if(!is.null(command))
   {
@@ -82,7 +83,7 @@ makePlot <- function(temp, input, output)
   
   make_regional_plot(chr=chr_sr, start=start, end=end, variant_data=temp, variant_chr_column=paste0("V", chr),
                      variant_pos_column=paste0("V", pos), variant_y_column=paste0("V", pval),
-                     variant_marker_column = paste0("V", marker),
+                     variant_marker_column = paste0("V", marker), genome_build = input$genbuild,
                      variant_ld_data = ld_data, variant_ld_ref = ldref)
 }
 
@@ -107,6 +108,7 @@ ui <- fluidPage(
       column(4, textInput("pval","P-value", value="", placeholder="9"))
     ),
     fluidRow(
+      radioButtons("genbuild", h3("Genome build"), choices =  c("hg19" = "hg19", "hg38" = "hg38"), selected = "hg19"),		 
       textInput("ldpath", h3("Enter path to LD file (optional)"), value="",
                 placeholder = "gs://fc-91605a4c-df34-4248-b17v-ca123456e59/ld-data-file.ld.csv"),
       textInput("ldref", h3("LD reference variant (optional)"), value="", placeholder = "20-61000005-A-G"),
@@ -128,7 +130,7 @@ server <- function(input, output, session)
   temp <- res_list$value
   output$plot <- renderPlot(make_regional_plot(chr=20, start=60900000, end=61100000, variant_data=temp, 
                                                variant_chr_column = "V2", variant_pos_column = "V3", variant_y_column =
-                                                 "V9", variant_marker_column = "V1",
+                                                 "V9", variant_marker_column = "V1", genome_build = "hg19",
                                                variant_ld_data = load_ld(file = "1kg-t2d.chr20_60.9M-61.1M.ld.csv", "20-61000005-A-G"),
                                                variant_ld_ref = "20-61000005-A-G"))
   disp <- head(temp[order(temp[, "V9"]), c(1, 2, 3, 9)], 10)
