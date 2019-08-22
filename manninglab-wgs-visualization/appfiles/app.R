@@ -60,11 +60,11 @@ makePlot <- function(temp, input, output)
   ldref <- ifelse(input$ldref=="", "20-61000005-A-G", input$ldref)
   if(startsWith(ldpath, "gs:"))
   {
-    ld_data <- load_ld(df = ldpath, ldref)
+    ld_data <- load_ld(df = ldpath,  ld_ref = ldref)
   }
   else if(ldpath != "NULL")
   {
-    ld_data <- load_ld(file = ldpath, ldref)
+    ld_data <- load_ld(file = ldpath,  ld_ref = ldref)
   }
   else
   {
