@@ -1,6 +1,7 @@
 library(shiny)
 library(shinyBS)
 library(WGSregionalPlot)
+library(shinyjs)
 
 get_tabix_df <- function(file=NULL, searchrange=NULL, command=NULL)
 {
@@ -87,38 +88,44 @@ makePlot <- function(temp, input, output)
                      variant_ld_data = ld_data, variant_ld_ref = ldref)
 }
 
+
 ui <- fluidPage(
-  titlePanel("Manning Lab - WGS Association Visualization"),
-  sidebarPanel(
+    useShinyjs(),
+    titlePanel("Manning Lab - WGS Association Visualization"),
+    tabPanel("tab",
+    div( id ="Sidebar",
+    sidebarPanel( width = 3,
     # Adding input boxes and buttons
     fluidRow(
-      textInput("accesstoken", h3("Access token"), value="", 
+      textInput("accesstoken", h4("Access token"), value="", 
                 placeholder = "4/nQEUyDXiVSWoOHoO3oE1Tj7PPQRMIaLXJOCM-m_vFWOUi3kkfzhP5_S5s"),
-      textInput("gspath", h3("Enter path to file"), value="",
+      textInput("gspath", h4("Enter path to file"), value="",
                 placeholder = "gs://fc-91605a4c-df34-4248-b17v-ca123456e59/wgs-summary-stats-file.txt.gz"),
-      textInput("searchrange", h3("Search Range"), value="20:60900000-61100000")
+      textInput("searchrange", h4("Search Range"), value="20:60900000-61100000")
     ),
     fluidRow(
-      h3("Enter column numbers for -"),
-      column(4, textInput("marker","Markername", value="", placeholder="1")),
+      h4("Enter column numbers for:"),
+      column(5, textInput("marker","Variant ID", value="", placeholder="1")),
       column(4, textInput("chr","Chromosome", value="", placeholder="2"))
     ),
     fluidRow(
-      column(4, textInput("pos","Position", value="", placeholder="3")),
+      column(5, textInput("pos","Position", value="", placeholder="3")),
       column(4, textInput("pval","P-value", value="", placeholder="9"))
     ),
     fluidRow(
-      radioButtons("genbuild", h3("Genome build"), choices =  c("hg19" = "hg19", "hg38" = "hg38"), selected = "hg19"),		 
-      textInput("ldpath", h3("Enter path to LD file (optional)"), value="",
+      radioButtons("genbuild", h4("Genome build"), choices =  c("hg19" = "hg19", "hg38" = "hg38"), selected = "hg19"),		 
+      textInput("ldpath", h4("Enter path to LD file (optional)"), value="",
                 placeholder = "gs://fc-91605a4c-df34-4248-b17v-ca123456e59/ld-data-file.ld.csv"),
-      textInput("ldref", h3("LD reference variant (optional)"), value="", placeholder = "20-61000005-A-G"),
+      textInput("ldref", h4("LD reference variant (optional)"), value="", placeholder = "20-61000005-A-G"),
       actionButton("submit", "View plot"),
       downloadButton(outputId="down", label="Download the plot"))
-  ),
+  )),
   mainPanel(
+    actionButton("toggleSidebar", "Toggle sidebar"),
     bsAlert("alert"),
-    plotOutput("plot"),
+    plotOutput("plot", height="500"),
     tableOutput("topvars")
+  )
   )
 )
 
@@ -126,6 +133,9 @@ ui <- fluidPage(
 server <- function(input, output, session) 
 {
   setwd("/tmp")
+  observeEvent(input$toggleSidebar, {
+		       shinyjs::toggle(id = "Sidebar")
+	})
   res_list <- get_tabix_df(file="1kg-t2d.all.assoc.aug12.txt.gz", searchrange="20:60900000-61100000")
   temp <- res_list$value
   output$plot <- renderPlot(make_regional_plot(chr=20, start=60900000, end=61100000, variant_data=temp, 
@@ -198,7 +208,7 @@ server <- function(input, output, session)
     },
     content = function(file)
     {
-      png(file)
+      png(file, width=720)
       makePlot(res_list$value, input, output)
       dev.off()
     }
