@@ -16,7 +16,10 @@ ADD login_script.sh ./
 ADD demo_script.sh ./
 
 RUN ["chmod", "+x", "./demo_script.sh"]
+RUN ["chmod", "+x", "./config_script"]
 RUN ["chmod", "+x", "/usr/bin/shiny-server.sh"]
+
+COPY appfiles /tmp
 
 #CMD ["/usr/bin/shiny-server.sh"]
 #ENTRYPOINT ["./config_script"]
