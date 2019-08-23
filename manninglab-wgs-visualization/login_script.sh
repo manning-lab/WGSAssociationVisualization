@@ -4,8 +4,8 @@ set timeout -1
 gcloud auth application-default login
 read REPLY
 
-echo "Access token"
-gcloud auth application-default print-access-token
+cp /root/.config/gcloud/application_default_credentials.json /tmp
+chmod a+rx /tmp/application_default_credentials.json
 
 chmod a+x /usr/bin/shiny-server.sh
 source /usr/bin/shiny-server.sh
