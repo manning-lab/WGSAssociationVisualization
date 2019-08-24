@@ -13,6 +13,8 @@ COPY shiny-server.sh /usr/bin/shiny-server.sh
 
 COPY appfiles /tmp
 
+ENV BOTO_PATH=/tmp/.boto
+
 ADD config_script ./
 ADD login_script.sh ./
 ADD demo_script.sh ./
@@ -21,7 +23,5 @@ RUN ["chmod", "+x", "./demo_script.sh"]
 RUN ["chmod", "+x", "./config_script"]
 RUN ["chmod", "+x", "./login_script.sh"]
 RUN ["chmod", "+x", "/usr/bin/shiny-server.sh"]
-
-ENV BOTO_PATH=/tmp/.boto
 #CMD ["/usr/bin/shiny-server.sh"]
 #ENTRYPOINT ["./config_script"]

@@ -1,5 +1,6 @@
 #!/usr/bin/expect
 set timeout -1
+
 spawn ./login_script.sh
 expect "*Enter verification code:" {interact ++ return; send "\r"}
 
