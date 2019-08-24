@@ -13,8 +13,6 @@ COPY shiny-server.sh /usr/bin/shiny-server.sh
 
 COPY appfiles /tmp
 
-ENV BOTO_PATH=/tmp/.boto
-
 ADD config_script ./
 ADD login_script.sh ./
 ADD demo_script.sh ./
