@@ -110,11 +110,6 @@ makePlot <- function(temp, input, output, session)
   pos <- ifelse(input$pos == "", 3, input$pos)
   pval <- ifelse(input$pval == "", 9, input$pval)
   
-  write.table(temp, "preview1.txt")
-  temp[,as.numeric(pval)] <- as.double(as.character(temp[,as.numeric(pval)]))
-  #cat(file = stderr(), paste(typeof(temp[2,as.numeric(pval)]), "\n"))
-  write.table(temp, "preview2.txt")
-  
   search_list <- unlist(strsplit(input$searchrange, "[[:punct:]]"))
   chr_sr <- as.numeric(search_list[1])
   start <- as.numeric(search_list[2])
@@ -234,7 +229,6 @@ server <- function(input, output, session)
     shinyjs::toggle(id = "Sidebar")
   })
   res_list <- get_tabix_df(file = "1kg-t2d.all.assoc.aug12.txt.gz", searchrange = "20:60900000-61100000")
-  #assign("res_list", get_tabix_df(file = "1kg-t2d.all.assoc.aug12.txt.gz", searchrange = "20:60900000-61100000"), envir = .GlobalEnv)
   temp <- res_list$value
   output$plot <-
     renderPlot(
@@ -449,10 +443,10 @@ server <- function(input, output, session)
     input$submit
     if (isolate(input$bucket) == "")
     {
-      res_list <-
-        #isolate(
+      res_list <<-
+        isolate(
           get_tabix_df(file = "1kg-t2d.all.assoc.aug12.txt.gz ", searchrange = input$searchrange)
-       # )
+       )
       if (!is.null(res_list$warning))
       {
         createAlert(
@@ -481,7 +475,7 @@ server <- function(input, output, session)
       else
       {
         closeAlert(session, "errorAlert")
-        plot <- makePlot(res_list$value, input, output, session)
+        plot <- isolate(makePlot(res_list$value, input, output, session))
         plot
       }
     }
@@ -495,7 +489,7 @@ server <- function(input, output, session)
       accesstoken <- readLines("access_token.txt")
       gspath <- paste0(bucket, "/", isolate(input$gspath))
       command <-
-        #isolate(
+        isolate(
           paste0(
             "export GCS_OAUTH_TOKEN=",
             accesstoken,
@@ -504,10 +498,9 @@ server <- function(input, output, session)
             " ",
             input$searchrange
           )
-        #)
-      cat(file = stderr(), paste("Command:", command))
-      res_list <- get_tabix_df(command = command)
-      assign("res_list", res_list, envir = .GlobalEnv)
+        )
+      
+      res_list <<- isolate(get_tabix_df(command = command))
       if (!is.null(res_list$warning))
       {
         createAlert(
@@ -535,7 +528,7 @@ server <- function(input, output, session)
       else
       {
         closeAlert(session, "errorAlert")
-        plot <- makePlot(res_list[["value"]], input, output, session)
+        plot <- isolate(makePlot(res_list[["value"]], input, output, session))
         plot
       }
     }
@@ -548,7 +541,7 @@ server <- function(input, output, session)
     },
     content = function(file)
     {
-      png(file, width = 720)
+      png(file, width = 1000)
       makePlot(res_list[["value"]], input, output, session)
       dev.off()
     }
