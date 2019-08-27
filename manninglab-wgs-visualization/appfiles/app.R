@@ -37,7 +37,7 @@ get_tabix_df <- function(file = NULL,
   if (!is.null(command))
   {
     res_list <- list(
-      value = withCallingHandlers(
+      value = data.frame(withCallingHandlers(
         tryCatch(
           read.table(pipe(command)),
           error = e.handler
@@ -45,7 +45,7 @@ get_tabix_df <- function(file = NULL,
         warning = function(w) {
           W <<- w
         }
-      ),
+      ), stringsAsFactors = FALSE),
       warning = W,
       error = E
     )
@@ -55,17 +55,15 @@ get_tabix_df <- function(file = NULL,
   {
     res_list <-
       list(
-        value = withCallingHandlers(
+        value = data.frame(withCallingHandlers(
           tryCatch(
-            read.table(pipe(
-              paste("/usr/local/htslib-1.9/bin/tabix", file, searchrange)
-            )),
+            read.table(pipe(paste("/usr/local/htslib-1.9/bin/tabix", file, searchrange))),
             error = e.handler
           ),
           warning = function(w) {
             W <<- w
           }
-        ),
+        ), stringsAsFactors = FALSE),
         warning = W,
         error = E
       )
@@ -73,26 +71,27 @@ get_tabix_df <- function(file = NULL,
   }
 }
 
-makePlot <- function(temp, input, output)
+makePlot <- function(temp, input, output, session)
 {
   gspath <-
     ifelse(input$gspath == "",
            "1kg-t2d.all.assoc.aug12.txt.gz",
            input$gspath)
-  ldpath <-
-    ifelse(
-      input$ldpath == "",
-      "1kg-t2d.chr20_60.9M-61.1M.ld.csv",
-      paste0(input$bucket, "/", isolate(input$ldpath))
-    )
-  marker <- ifelse(input$marker == "", 1, input$marker)
-  chr <- ifelse(input$chr == "", 2, input$chr)
-  pos <- ifelse(input$pos == "", 3, input$pos)
-  pval <- ifelse(input$pval == "", 9, input$pval)
-  ldref <- ifelse(input$ldref == "", "20-61000005-A-G", input$ldref)
-  
-  if (startsWith(ldpath, "gs:"))
+  ld_data <- NULL
+  ldref <- ifelse(input$ldref == "", "20-61000005-A-G", isolate(input$ldref))
+  if(gspath == "1kg-t2d.all.assoc.aug12.txt.gz")
   {
+    ldpath <- "1kg-t2d.chr20_60.9M-61.1M.ld.csv"
+    ld_data <- load_ld(file = ldpath,  ld_ref = ldref)
+  }
+  else if(input$bucket2 == "NULL")
+  {
+    ld_data <- NULL
+    ldref <- NULL
+  }
+  else
+  {
+    ldpath <- paste0(input$bucket2, "/", isolate(input$ldpath))
     write(system(
       paste(
         "/usr/local/gcloud/google-cloud-sdk/bin/gsutil cat",
@@ -102,14 +101,12 @@ makePlot <- function(temp, input, output)
     ), "ldFile.txt")
     ld_data <- load_ld(file = "ldFile.txt",  ld_ref = ldref)
   }
-  else if (ldpath != "NULL")
-  {
-    ld_data <- load_ld(file = ldpath,  ld_ref = ldref)
-  }
-  else
-  {
-    ld_data <- NULL
-  }
+  marker <- ifelse(input$marker == "", 1, input$marker)
+  chr <- ifelse(input$chr == "", 2, input$chr)
+  pos <- ifelse(input$pos == "", 3, input$pos)
+  pval <- ifelse(input$pval == "", 9, input$pval)
+  temp[,as.numeric(pval)] <- as.double(temp[,as.numeric(pval)])
+  cat(file = stderr(), paste(typeof(temp[2,as.numeric(pval)]), "\n"))
   
   search_list <- unlist(strsplit(input$searchrange, "[[:punct:]]"))
   chr_sr <- as.numeric(search_list[1])
@@ -225,11 +222,12 @@ ui <- fluidPage(
 server <- function(input, output, session)
 {
   setwd("/tmp")
+  
   observeEvent(input$toggleSidebar, {
     shinyjs::toggle(id = "Sidebar")
   })
-  res_list <-
-    get_tabix_df(file = "1kg-t2d.all.assoc.aug12.txt.gz", searchrange = "20:60900000-61100000")
+  res_list <- get_tabix_df(file = "1kg-t2d.all.assoc.aug12.txt.gz", searchrange = "20:60900000-61100000")
+  #assign("res_list", get_tabix_df(file = "1kg-t2d.all.assoc.aug12.txt.gz", searchrange = "20:60900000-61100000"), envir = .GlobalEnv)
   temp <- res_list$value
   output$plot <-
     renderPlot(
@@ -284,13 +282,17 @@ server <- function(input, output, session)
     )
     E <- NULL
     W <- NULL
+    bucket <- isolate(input$bucket)
+    if(!startsWith(input$bucket, "gs://"))
+    {
+      bucket <- paste0("gs://", input$bucket)
+    }
     bucket_data <- list(
       value = withCallingHandlers(
         tryCatch(
           read.table(pipe(
             paste(
-              "/usr/local/gcloud/google-cloud-sdk/bin/gsutil ls",
-              isolate(input$bucket)
+              "/usr/local/gcloud/google-cloud-sdk/bin/gsutil ls", bucket
             )
           )),
           error = function(e){ E <<- "Incorrect bucket link entered"}
@@ -305,7 +307,7 @@ server <- function(input, output, session)
     if(is.null(bucket_data$error)){
       updateTextInput(session,
                       "bucket2", 
-                      value = input$bucket)
+                      value = bucket)
       bucket_items <-
         data.frame(name = as.character(bucket_data$value$V1),
                    stringsAsFactors = FALSE)
@@ -367,54 +369,68 @@ server <- function(input, output, session)
     closeAlert(session, "errorAlert")
     E <- NULL
     W <- NULL
-    bucket_data <- list(
-      value = withCallingHandlers(
-        tryCatch(
-          read.table(pipe(
-            paste(
-              "/usr/local/gcloud/google-cloud-sdk/bin/gsutil ls",
-              isolate(input$bucket)
-            )
-          )),
-          error = function(e){ E <<- "Incorrect bucket link entered"}
-        ),
-        warning = function(w) {
-          W <<- w
-        }
-      ),
-      warning = W,
-      error = E
-    )
-    if(is.null(bucket_data$error)){
-      bucket_items <-
-        data.frame(name = as.character(bucket_data$value$V1),
-                   stringsAsFactors = FALSE)
-      exts <- c("csv", "txt", "tsv")
-      opt_list <- list()
-      for (i in bucket_items$name)
+    bucket <- input$bucket2
+    if(bucket != "NULL")
+    {
+      if(!startsWith(input$bucket2, "gs://"))
       {
-        if (substring(i, sapply(gregexpr("\\.", i), tail, 1) + 1) %in% exts)
-        {
-          opt_list <-
-            append(opt_list, substring(i, sapply(gregexpr("\\/", i), tail, 1) + 1))
-        }
+        bucket <- paste0("gs://", input$bucket2)
       }
-      updateSelectInput(session,
-                        "ldpath",
-                        choices = opt_list,
-                        selected = "")
-      
+      bucket_data <- list(
+        value = withCallingHandlers(
+          tryCatch(
+            read.table(pipe(
+              paste(
+                "/usr/local/gcloud/google-cloud-sdk/bin/gsutil ls", bucket
+              )
+            )),
+            error = function(e){ E <<- "Incorrect bucket link entered"}
+          ),
+          warning = function(w) {
+            W <<- w
+          }
+        ),
+        warning = W,
+        error = E
+      )
+      if(is.null(bucket_data$error)){
+        bucket_items <-
+          data.frame(name = as.character(bucket_data$value$V1),
+                     stringsAsFactors = FALSE)
+        exts <- c("csv", "txt", "tsv")
+        opt_list <- list()
+        for (i in bucket_items$name)
+        {
+          if (substring(i, sapply(gregexpr("\\.", i), tail, 1) + 1) %in% exts)
+          {
+            opt_list <-
+              append(opt_list, substring(i, sapply(gregexpr("\\/", i), tail, 1) + 1))
+          }
+        }
+        updateSelectInput(session,
+                          "ldpath",
+                          choices = opt_list,
+                          selected = "")
+        
+      }
+      else
+      {
+        createAlert(
+          session,
+          "alert",
+          "errorAlert",
+          title = "Error",
+          content = bucket_data$error,
+          append = FALSE
+        )
+        updateSelectInput(session,
+                          "ldpath",
+                          choices = "",
+                          selected = "")
+      }
     }
     else
     {
-      createAlert(
-        session,
-        "alert",
-        "errorAlert",
-        title = "Error",
-        content = bucket_data$error,
-        append = FALSE
-      )
       updateSelectInput(session,
                         "ldpath",
                         choices = "",
@@ -458,14 +474,19 @@ server <- function(input, output, session)
       else
       {
         closeAlert(session, "errorAlert")
-        plot <- isolate(makePlot(res_list$value, input, output))
+        plot <- isolate(makePlot(res_list$value, input, output, session))
         plot
       }
     }
     else
     {
+      bucket <- isolate(input$bucket)
+      if(!startsWith(input$bucket, "gs://"))
+      {
+        bucket <- paste0("gs://", input$bucket)
+      }
       accesstoken <- readLines("access_token.txt")
-      gspath <- paste0(input$bucket, "/", isolate(input$gspath))
+      gspath <- paste0(bucket, "/", isolate(input$gspath))
       command <-
         isolate(
           paste0(
@@ -477,7 +498,7 @@ server <- function(input, output, session)
             isolate(input$searchrange)
           )
         )
-      res_list <- isolate(get_tabix_df(command = command))
+      assign("res_list", get_tabix_df(command = command), envir = .GlobalEnv)
       if (!is.null(res_list$warning))
       {
         createAlert(
@@ -505,7 +526,7 @@ server <- function(input, output, session)
       else
       {
         closeAlert(session, "errorAlert")
-        plot <- isolate(makePlot(res_list$value, input, output))
+        plot <- makePlot(res_list$value, input, output, session)
         plot
       }
     }
@@ -519,7 +540,7 @@ server <- function(input, output, session)
     content = function(file)
     {
       png(file, width = 720)
-      makePlot(res_list$value, input, output)
+      makePlot(res_list$value, input, output, session)
       dev.off()
     }
   )
