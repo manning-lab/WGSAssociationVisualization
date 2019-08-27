@@ -66,7 +66,7 @@ Execute in your terminal -
  Give the plot a minute to generate. <br>
  
  - Optionally, change the range you want to search in. 
- - Click Submit to view the plot
+ - Click the View plot button to view the plot
  - Clicking the Download button will download the plot as a .png file (for eg. Regional_plot_20:60900000-61100000.png) 
  
  #### Exiting the demo session
@@ -75,7 +75,7 @@ Navigate back to your terminal -
  
  If you wish to run the app using your data in the Google bucket, follow the next steps. <br>
  
- If not, to exit the docker session:
+ If not, to exit the docker session, by typing:
  ```
    exit
  ```
@@ -112,23 +112,51 @@ Navigate back to your terminal -
  ```
  ++
  ```
- - If everything is correct, an access token, similar to the one below, will be displayed. Copy the token, you will need it when you run the app.
+ - If everything is correct, you will see the following message:
  ```
-   Access token
-   ya29.GltjB01piVLyObuiAYK0gZmShRuTiXtKCS2BBaSIKa5qWKW6U-baZinGarINyB_9K_tW_zKJhBzwoUKNqFruFIQqxYKRrKE5L6bgPXO-kwk8xGUxwjE9eR1iZ4dK
+   Credentials saved to file: [/root/.config/gcloud/application_default_credentials.json]
+
+These credentials will be used by any library that requests
+Application Default Credentials.
+
+To generate an access token for other uses, run:
+  gcloud auth application-default print-access-token
+
+
+Updates are available for some Cloud SDK components.  To install them,
+please run:
+  $ gcloud components update
+
+
+
+To take a quick anonymous survey, run:
+  $ gcloud alpha survey
+
+
+Navigate to http://127.0.0.1:3838/ on your web browser
+
+*** warning - no files are being watched ***
+
  ```
 #### Using the application
 Navigate to your web browser - 
  - Go to http://127.0.0.1:3838/
- - Paste your access token in the input box
- - Enter the path to the summary statistics file - 
+ - Give the plot a minute to generate
+ - Enter the link to the Google bucket containing your data: 
  ```
    Something like this - 
-   gs://fc-91605a4c-df34-4248-b17v-ca123456e59/wgs-summary-stats-file.txt.gz
+   gs://fc-91605a4c-df34-4248-b17v-ca123456e59
  ```
- - Enter the columns numbers for the Marker name (a unique variant identifier), chromosome of the variant, position of the variant and p-value of the variant. For eg. for the demo file, the input would be 1, 2, 3 and 9 respectively.
+ - Click the Submit bucket link button. This will auto populate the drop down list below with the .gz files in your bucket which have corresponding tabix indexed files.
+ - Select the desired file from the drop down list
  - Enter the range you want to search in. (For eg. 20:60900000-61100000)
- - Click Submit to view the plot
+ - Enter the columns numbers for the Variant ID (a unique variant identifier), chromosome of the variant, position of the variant and p-value of the variant. For eg. for the demo file, the input would be 1, 2, 3 and 9 respectively.
+ - Select the appropriate genome build from the given options - hg19 and hg38
+ - The Google bucket link for the LD file gets auto populated but you can edit this link if your file exists in another location and click the Submit bucket link button.
+ - This will populate the drop down list below with all the .txt, .tsv and .csv files in that location
+ - Enter the LD reference variant (For eg. 20-61000005-A-G)
+
+ - Click the View plot button to view the plot
  - Clicking the Download button will download the plot as a .png file (for eg. Regional_plot_10:112948590-113048589.png) 
  
 #### Exiting the docker container
