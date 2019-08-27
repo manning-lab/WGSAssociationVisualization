@@ -37,33 +37,34 @@ get_tabix_df <- function(file = NULL,
   if (!is.null(command))
   {
     res_list <- list(
-      value = data.frame(withCallingHandlers(
+      value = withCallingHandlers(
         tryCatch(
-          read.table(pipe(command)),
+          read.table(pipe(command), stringsAsFactors = F),
           error = e.handler
         ),
         warning = function(w) {
           W <<- w
         }
-      ), stringsAsFactors = FALSE),
+      ),
       warning = W,
       error = E
     )
+    write.table(res_list[["value"]], "tabix_out.txt")
     return(res_list)
   }
   else
   {
     res_list <-
       list(
-        value = data.frame(withCallingHandlers(
+        value = withCallingHandlers(
           tryCatch(
-            read.table(pipe(paste("/usr/local/htslib-1.9/bin/tabix", file, searchrange))),
+            read.table(pipe(paste("/usr/local/htslib-1.9/bin/tabix", file, searchrange)), stringsAsFactors = F),
             error = e.handler
           ),
           warning = function(w) {
             W <<- w
           }
-        ), stringsAsFactors = FALSE),
+        ),
         warning = W,
         error = E
       )
@@ -77,14 +78,16 @@ makePlot <- function(temp, input, output, session)
     ifelse(input$gspath == "",
            "1kg-t2d.all.assoc.aug12.txt.gz",
            input$gspath)
+  
   ld_data <- NULL
   ldref <- ifelse(input$ldref == "", "20-61000005-A-G", isolate(input$ldref))
+  
   if(gspath == "1kg-t2d.all.assoc.aug12.txt.gz")
   {
     ldpath <- "1kg-t2d.chr20_60.9M-61.1M.ld.csv"
     ld_data <- load_ld(file = ldpath,  ld_ref = ldref)
   }
-  else if(input$bucket2 == "NULL")
+  else if(input$ldpath == "")
   {
     ld_data <- NULL
     ldref <- NULL
@@ -101,12 +104,16 @@ makePlot <- function(temp, input, output, session)
     ), "ldFile.txt")
     ld_data <- load_ld(file = "ldFile.txt",  ld_ref = ldref)
   }
+  
   marker <- ifelse(input$marker == "", 1, input$marker)
   chr <- ifelse(input$chr == "", 2, input$chr)
   pos <- ifelse(input$pos == "", 3, input$pos)
   pval <- ifelse(input$pval == "", 9, input$pval)
-  temp[,as.numeric(pval)] <- as.double(temp[,as.numeric(pval)])
-  cat(file = stderr(), paste(typeof(temp[2,as.numeric(pval)]), "\n"))
+  
+  write.table(temp, "preview1.txt")
+  temp[,as.numeric(pval)] <- as.double(as.character(temp[,as.numeric(pval)]))
+  #cat(file = stderr(), paste(typeof(temp[2,as.numeric(pval)]), "\n"))
+  write.table(temp, "preview2.txt")
   
   search_list <- unlist(strsplit(input$searchrange, "[[:punct:]]"))
   chr_sr <- as.numeric(search_list[1])
@@ -443,9 +450,9 @@ server <- function(input, output, session)
     if (isolate(input$bucket) == "")
     {
       res_list <-
-        isolate(
+        #isolate(
           get_tabix_df(file = "1kg-t2d.all.assoc.aug12.txt.gz ", searchrange = input$searchrange)
-        )
+       # )
       if (!is.null(res_list$warning))
       {
         createAlert(
@@ -474,7 +481,7 @@ server <- function(input, output, session)
       else
       {
         closeAlert(session, "errorAlert")
-        plot <- isolate(makePlot(res_list$value, input, output, session))
+        plot <- makePlot(res_list$value, input, output, session)
         plot
       }
     }
@@ -488,17 +495,19 @@ server <- function(input, output, session)
       accesstoken <- readLines("access_token.txt")
       gspath <- paste0(bucket, "/", isolate(input$gspath))
       command <-
-        isolate(
+        #isolate(
           paste0(
             "export GCS_OAUTH_TOKEN=",
             accesstoken,
             " ; /usr/local/htslib-1.9/bin/tabix ",
             gspath,
             " ",
-            isolate(input$searchrange)
+            input$searchrange
           )
-        )
-      assign("res_list", get_tabix_df(command = command), envir = .GlobalEnv)
+        #)
+      cat(file = stderr(), paste("Command:", command))
+      res_list <- get_tabix_df(command = command)
+      assign("res_list", res_list, envir = .GlobalEnv)
       if (!is.null(res_list$warning))
       {
         createAlert(
@@ -526,7 +535,7 @@ server <- function(input, output, session)
       else
       {
         closeAlert(session, "errorAlert")
-        plot <- makePlot(res_list$value, input, output, session)
+        plot <- makePlot(res_list[["value"]], input, output, session)
         plot
       }
     }
@@ -540,7 +549,7 @@ server <- function(input, output, session)
     content = function(file)
     {
       png(file, width = 720)
-      makePlot(res_list$value, input, output, session)
+      makePlot(res_list[["value"]], input, output, session)
       dev.off()
     }
   )
