@@ -169,9 +169,9 @@ Navigate to your web browser -
  - Enter the range you want to search in. (For eg. 20:60900000-61100000)
  - Enter the columns numbers for the Variant ID (a unique variant identifier), chromosome of the variant, position of the variant and p-value of the variant. For eg. for the demo file, the input would be 1, 2, 3 and 9 respectively.
  - Select the appropriate genome build from the given options - hg19 and hg38
- - The Google bucket link for the LD file gets auto populated but you can edit this link if your file exists in another location and click the Submit bucket link button.
- - This will populate the drop down list below with all the .txt, .tsv and .csv files in that location
- - Enter the LD reference variant (For eg. 20-61000005-A-G)
+ - (Optional) The Google bucket link for the LD file gets auto populated but you can edit this link if your file exists in another location and click the Submit bucket link button.
+   - This will populate the drop down list below with all the .txt, .tsv and .csv files in that location
+ - (Optional) Enter the LD reference variant (For eg. 20-61000005-A-G)
 
  - Click the View plot button to view the plot
  - Clicking the Download button will download the plot as a .png file (for eg. Regional_plot_10:112948590-113048589.png) 
@@ -179,7 +179,7 @@ Navigate to your web browser -
 #### Exiting the docker container
 Navigate back to your terminal - 
  - Type Ctrl+C on Windows or Command+C on Mac
- - Exit the docker session:
+ - Exit the docker session, by typing:
  ```
    exit
  ```
