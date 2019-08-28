@@ -1,193 +1,18 @@
 library(shiny)
+# Library to create alerts for incorrect input
 library(shinyBS)
+# Package created by Tim <https://github.com/manning-lab/WGSregionalPlot>
 library(WGSregionalPlot)
+# Library to parse JSON files to implement gsutil functions
 library(rjson)
+# Library to implement toggle sidebar functionality
 library(shinyjs)
+# Sourcing helper functions file
+source("./functions.R")
 
-get_tabix_df <- function(file = NULL,
-                         searchrange = NULL,
-                         command = NULL)
-{
-  W = NULL
-  E = NULL
-  e.handler <- function(e) {
-    cat(file = stderr(), paste(e, collapse = ", "))
-    if (!is.null(command))
-    {
-      comm_list <- unlist(strsplit(command, " "))
-      searchrange <- comm_list[length(comm_list)]
-    }
-    search_list <- unlist(strsplit(searchrange, "[[:punct:]]"))
-    
-    if (as.numeric(search_list[2]) > as.numeric(search_list[3]))
-    {
-      E <<-
-        "Tabix failed due to reason: Start of searchrange cannot be greater than end of searchrange"
-    }
-    else if (grep(": no lines available in input", paste(e, collapse = " ")) == 1)
-    {
-      E <<-
-        "Tabix failed due to reason: No values found in given searchrange"
-    }
-    else
-    {
-      E <<- paste("Weird error: ", e)
-    }
-  }
-  if (!is.null(command))
-  {
-    res_list <- list(
-      value = withCallingHandlers(
-        tryCatch(
-          read.table(pipe(command), stringsAsFactors = F),
-          error = e.handler
-        ),
-        warning = function(w) {
-          W <<- w
-        }
-      ),
-      warning = W,
-      error = E
-    )
-    write.table(res_list[["value"]], "tabix_out.txt")
-    return(res_list)
-  }
-  else
-  {
-    res_list <-
-      list(
-        value = withCallingHandlers(
-          tryCatch(
-            read.table(pipe(paste("/usr/local/htslib-1.9/bin/tabix", file, searchrange)), stringsAsFactors = F),
-            error = e.handler
-          ),
-          warning = function(w) {
-            W <<- w
-          }
-        ),
-        warning = W,
-        error = E
-      )
-    return(res_list)
-  }
-}
-
-makePlot <- function(temp, input, output, session)
-{
-  gspath <-
-    ifelse(input$gspath == "",
-           "1kg-t2d.all.assoc.aug12.txt.gz",
-           input$gspath)
-  
-  ld_data <- NULL
-  ldref <- ifelse(input$ldref == "", "20-61000005-A-G", isolate(input$ldref))
-  
-  if(gspath == "1kg-t2d.all.assoc.aug12.txt.gz")
-  {
-    ldpath <- "1kg-t2d.chr20_60.9M-61.1M.ld.csv"
-    ld_data <- load_ld(file = ldpath,  ld_ref = ldref)
-  }
-  else if(input$ldpath == "")
-  {
-    ld_data <- NULL
-    ldref <- NULL
-  }
-  else
-  {
-    ldpath <- paste0(input$bucket2, "/", isolate(input$ldpath))
-    write(system(
-      paste(
-        "/usr/local/gcloud/google-cloud-sdk/bin/gsutil cat",
-        ldpath
-      ),
-      intern = T
-    ), "ldFile.txt")
-    ld_data <- load_ld(file = "ldFile.txt",  ld_ref = ldref)
-  }
-  
-  marker <- ifelse(input$marker == "", 1, input$marker)
-  chr <- ifelse(input$chr == "", 2, input$chr)
-  pos <- ifelse(input$pos == "", 3, input$pos)
-  pval <- ifelse(input$pval == "", 9, input$pval)
-  
-  search_list <- unlist(strsplit(input$searchrange, "[[:punct:]]"))
-  chr_sr <- as.numeric(search_list[1])
-  start <- as.numeric(search_list[2])
-  end <- as.numeric(search_list[3])
-  disp <-
-    head(temp[order(temp[, paste0("V", pval)]), c(as.numeric(marker),
-                                                  as.numeric(chr),
-                                                  as.numeric(pos),
-                                                  as.numeric(pval))], 10)
-  
-  if(!is.null(ld_data))
-  {
-    disp$LD <- NA
-    disp$test <- disp[,1]
-    disp$test <- gsub("[[:punct:]]", "_", disp$test)
-    if(startsWith(disp$test[1], "chr") & !startsWith(ld_data$MarkerName[1], "chr"))
-    {
-      disp$test <- sub("^chr", "", disp$test)
-    }
-    else if(!startsWith(disp$test[1], "chr") & startsWith(ld_data$MarkerName[1], "chr"))
-    {
-      disp$test <- paste0("chr", disp$test)
-    }
-    
-    for (i in seq(1,10)) {
-      if(disp$test[i] %in% ld_data$MarkerName)
-      {
-        disp$LD[i] <- ld_data[ld_data$MarkerName == disp$test[i], "ld"]
-      }
-      else
-        disp$LD[i] <- NA
-    }
-    
-    disp <-
-      data.frame(
-        "Marker Name" = as.character(disp[, 1]),
-        "Chromosome" = as.character(disp[, 2]),
-        "Position" = as.character(disp[, 3]),
-        "P-value" = disp[, 4],
-        "LD" = disp$LD
-      )
-    
-    colnames(disp) <-
-      c("Marker Name", "Chromosome", "Position", "P-value", "LD")
-  }
-  else
-  {
-    disp <-
-      data.frame(
-        "Marker Name" = as.character(disp[, 1]),
-        "Chromosome" = as.character(disp[, 2]),
-        "Position" = as.character(disp[, 3]),
-        "P-value" = disp[, 4]
-      )
-    
-    colnames(disp) <-
-      c("Marker Name", "Chromosome", "Position", "P-value")  
-  }
-  
-  output$topvars <- renderTable(disp, digits = -1)
-  
-  make_regional_plot(
-    chr = chr_sr,
-    start = start,
-    end = end,
-    variant_data = temp,
-    variant_chr_column = paste0("V", chr),
-    variant_pos_column = paste0("V", pos),
-    variant_y_column = paste0("V", pval),
-    variant_marker_column = paste0("V", marker),
-    genome_build = input$genbuild,
-    variant_ld_data = ld_data,
-    variant_ld_ref = ldref
-  )
-}
-
-
+# User interface of the app
 ui <- fluidPage(
+  # Toggle functionality
   useShinyjs(),
   titlePanel("Manning Lab - WGS Association Visualization"),
   tabPanel(
@@ -254,26 +79,33 @@ ui <- fluidPage(
         )),
     mainPanel(
       actionButton("toggleSidebar", "Toggle sidebar"),
-      bsAlert("alert"),
+      bsAlert("alert"), # Placeholder to display an alert
       plotOutput("plot", width = "100%", height = "500"),
       tableOutput("topvars")
     )
   )
 )
 
-
+# Server-side code for the app
 server <- function(input, output, session)
 {
   setwd("/tmp")
   
+  # Toggling the sidebar
   observeEvent(input$toggleSidebar, {
     shinyjs::toggle(id = "Sidebar")
   })
   
+  # Observing the bucket link, to .gz file, submission
   observeEvent(input$bucketsubmit, {
+    # Closing any alerts that maybe displayed
     closeAlert(session, "errorAlert")
-    Sys.setenv(GOOGLE_APPLICATION_CREDENTIALS = "/tmp/application_default_credentials.json")
-    Sys.setenv(BOTO_PATH = "/tmp/.boto")
+    
+    # Setting Google credentials to environment variables
+    Sys.setenv(GOOGLE_APPLICATION_CREDENTIALS = "/tmp/application_default_credentials.json") # Used for gcloud functions
+    Sys.setenv(BOTO_PATH = "/tmp/.boto") # Used for gsutil
+    
+    # Generating a .boto file from the application_default_credentials.json file to be used by gsutil
     js <-
       fromJSON(file = "/tmp/application_default_credentials.json")
     boto_data <-
@@ -286,6 +118,8 @@ server <- function(input, output, session)
         js$refresh_token
       )
     write(boto_data, file = "/tmp/.boto")
+    
+    # Generating the access token using gcloud to be used by tabix
     write(
       system(
         "gcloud auth application-default print-access-token",
@@ -293,17 +127,25 @@ server <- function(input, output, session)
       ),
       "access_token.txt"
     )
+    
+    # Handling incorrect bucket link provided by user
+    # Initializing warning and error to NULL
     E <- NULL
     W <- NULL
     bucket <- isolate(input$bucket)
+    
+    # Handling case if user enters link without gs://
     if(!startsWith(input$bucket, "gs://"))
     {
       bucket <- paste0("gs://", input$bucket)
     }
+    
     bucket_data <- list(
+      # Using tryCatch with error and warning handlers
       value = withCallingHandlers(
         tryCatch(
           read.table(pipe(
+            # Using gsutil to obtain list of the bucket contents
             paste(
               "/usr/local/gcloud/google-cloud-sdk/bin/gsutil ls", bucket
             )
@@ -317,13 +159,19 @@ server <- function(input, output, session)
       warning = W,
       error = E
     )
-    if(is.null(bucket_data$error)){
+    
+    # If gsutil was executed without errors or warnings
+    if(is.null(bucket_data$error) && is.null(bucket_data$warning)){
+      # Defaulting the LD data bucket to first bucket link
       updateTextInput(session,
                       "bucket2", 
                       value = bucket)
+      
       bucket_items <-
         data.frame(name = as.character(bucket_data$value$V1),
                    stringsAsFactors = FALSE)
+      
+      # Extracting only .gz files who have corresponding .gz.tbi in the same location
       opt_list <- list()
       for (i in bucket_items$name)
       {
@@ -336,11 +184,14 @@ server <- function(input, output, session)
           }
         }
       }
+      
+      # Adding the extracted files to the drop down list (Updation)
       updateSelectInput(session,
                         "gspath",
                         choices = opt_list,
                         selected = "")
       
+      # Extracting the .csv, .tsv and .txt files from the bucket (probable LD files)
       exts <- c("csv", "txt", "tsv")
       opt_list <- list()
       for (i in bucket_items$name)
@@ -351,14 +202,18 @@ server <- function(input, output, session)
             append(opt_list, substring(i, sapply(gregexpr("\\/", i), tail, 1) + 1))
         }
       }
+      
+      # Adding the extracted files to the drop down list (Updation)
       updateSelectInput(session,
                         "ldpath",
                         choices = opt_list,
                         selected = "")
       
     }
+    # If gsutil generated an error
     else
     {
+      # Creating an alert
       createAlert(
         session,
         "alert",
@@ -367,6 +222,8 @@ server <- function(input, output, session)
         content = bucket_data$error,
         append = FALSE
       )
+      
+      # Resetting the drop down lists
       updateSelectInput(session,
                         "gspath",
                         choices = "",
@@ -379,20 +236,29 @@ server <- function(input, output, session)
   })
   
   observeEvent(input$bucketsubmit2, {
+    # Closing any alerts that maybe displayed
     closeAlert(session, "errorAlert")
+    
+    # Handling incorrect bucket link provided by user
+    # Initializing warning and error to NULL
     E <- NULL
     W <- NULL
     bucket <- input$bucket2
-    if(bucket != "NULL")
+    # Checking if user cleared the second bucket
+    if(bucket != "")
     {
+      # Handling case if user enters link without gs://
       if(!startsWith(input$bucket2, "gs://"))
       {
         bucket <- paste0("gs://", input$bucket2)
       }
+      
       bucket_data <- list(
+        # Using tryCatch with error and warning handlers
         value = withCallingHandlers(
           tryCatch(
             read.table(pipe(
+              # Using gsutil to obtain list of the bucket contents
               paste(
                 "/usr/local/gcloud/google-cloud-sdk/bin/gsutil ls", bucket
               )
@@ -406,10 +272,14 @@ server <- function(input, output, session)
         warning = W,
         error = E
       )
-      if(is.null(bucket_data$error)){
+      
+      # If gsutil was executed without errors or warnings
+      if(is.null(bucket_data$error) && is.null(bucket_data$warning)){
         bucket_items <-
           data.frame(name = as.character(bucket_data$value$V1),
                      stringsAsFactors = FALSE)
+        
+        # Extracting the .csv, .tsv and .txt files from the bucket (probable LD files)
         exts <- c("csv", "txt", "tsv")
         opt_list <- list()
         for (i in bucket_items$name)
@@ -420,14 +290,19 @@ server <- function(input, output, session)
               append(opt_list, substring(i, sapply(gregexpr("\\/", i), tail, 1) + 1))
           }
         }
+        
+        # Adding the extracted files to the drop down list (Updation)
         updateSelectInput(session,
                           "ldpath",
                           choices = opt_list,
                           selected = "")
         
       }
+      
+      # If gsutil generated an error
       else
       {
+        # Creating an alert
         createAlert(
           session,
           "alert",
@@ -436,31 +311,44 @@ server <- function(input, output, session)
           content = bucket_data$error,
           append = FALSE
         )
+        
+        # Resetting the drop down list
         updateSelectInput(session,
                           "ldpath",
                           choices = "",
                           selected = "")
       }
     }
+    
+    # Resetting the drop down list if user cleared the bucket link box
     else
     {
       updateSelectInput(session,
                         "ldpath",
                         choices = "",
                         selected = "")
+      updateTextInput(session,
+                      "ldref", 
+                      value = "")
     }
   })
   
+  # Rendering the plot 
   output$plot <- renderPlot({
     input$submit
+    # If no bucket link is provided ie. using demo files as input
     if (isolate(input$bucket) == "")
     {
-      res_list <<-
+      # Obtaining the tabix results
+      res_list <-
         isolate(
           get_tabix_df(file = "1kg-t2d.all.assoc.aug12.txt.gz ", searchrange = input$searchrange)
        )
+      
+      # If tabix resulted in a warning
       if (!is.null(res_list$warning))
       {
+        # Creating an alert warning
         createAlert(
           session,
           "alert",
@@ -469,11 +357,14 @@ server <- function(input, output, session)
           content = res_list$warning,
           append = FALSE
         )
-        
+        # Clearing the preview table
         output$topvars <- renderTable(data.frame())
       }
+      
+      # If tabix resulted in an error
       else if (!is.null(res_list$error))
       {
+        # Creating an alert warning
         createAlert(
           session,
           "alert",
@@ -482,24 +373,52 @@ server <- function(input, output, session)
           content = res_list$error,
           append = FALSE
         )
+        # Clearing the preview table
         output$topvars <- renderTable(data.frame())
       }
+      
+      # If tabix was successful
       else
       {
+        # Closing any alerts that maybe displayed
         closeAlert(session, "errorAlert")
-        plot <- isolate(makePlot(res_list$value, input, output, session))
+        
+        # Calling function to initialize the variables
+        var_list <<- isolate(var_init(res_list$value, input, output))
+        
+        # Clearing the preview table
+        output$topvars <- renderTable(data.frame())
+        
+        # Sending the initialized variables to makePlot()
+        plot <- makePlot(var_list)
+        
+        # Displaying the preview table
+        out_table(var_list)
+        
+        # Rendering the plot
         plot
       }
     }
+    
+    # If user has provided a bucket link
     else
     {
       bucket <- isolate(input$bucket)
+      
+      # Handling case if user enters link without gs://
       if(!startsWith(input$bucket, "gs://"))
       {
         bucket <- paste0("gs://", input$bucket)
       }
+      
+      # Reading the acces token file contents to be used by tabix
       accesstoken <- readLines("access_token.txt")
+      
+      # Appending the bucket link to the file name
       gspath <- paste0(bucket, "/", isolate(input$gspath))
+      
+      # Stitching together the command to be sent for tabix
+      # Exporting the access token since tabix is accessing a file in a Google bucket
       command <-
         isolate(
           paste0(
@@ -512,9 +431,13 @@ server <- function(input, output, session)
           )
         )
       
-      res_list <<- isolate(get_tabix_df(command = command))
+      # Obtaining the tabix results
+      res_list <- isolate(get_tabix_df(command = command))
+      
+      # If tabix resulted in a warning
       if (!is.null(res_list$warning))
       {
+        # Creating an alert warning
         createAlert(
           session,
           "alert",
@@ -523,10 +446,14 @@ server <- function(input, output, session)
           content = res_list$warning,
           append = FALSE
         )
+        # Clearing the preview table
         output$topvars <- renderTable(data.frame())
       }
+      
+      # If tabix resulted in an error
       else if (!is.null(res_list$error))
       {
+        # Creating an alert error
         createAlert(
           session,
           "alert",
@@ -535,30 +462,59 @@ server <- function(input, output, session)
           content = res_list$error,
           append = FALSE
         )
+        # Clearing the preview table
         output$topvars <- renderTable(data.frame())
       }
+      
+      # If tabix was successful
       else
       {
+        # Closing any alerts that maybe displayed
         closeAlert(session, "errorAlert")
-        plot <- isolate(makePlot(res_list[["value"]], input, output, session))
+        
+        # Calling function to initialize the variables
+        var_list <<- isolate(var_init(res_list$value, input, output))
+        
+        # Clearing the preview table
+        output$topvars <- renderTable(data.frame())
+        
+        # Sending the initialized variables to makePlot()
+        plot <- makePlot(var_list)
+        
+        # Displaying the preview table
+        out_table(var_list)
+        
+        # Rendering the plot
         plot
       }
     }
   })
   
+  # DOwnloading the rendered plot
   output$down <- downloadHandler(
+    # Setting the file name
     filename = function()
     {
       paste0("Regional_plot_", input$searchrange, ".png")
     },
+    
+    # Generating the plot using the latest variable values
     content = function(file)
     {
+      # Initiating a png file
       png(file, width = 1000)
-      makePlot(res_list[["value"]], input, output, session)
+      
+      # Sending the latest var_list to makePlot
+      makePlot(var_list)
+      
+      # Closing the png file
       dev.off()
     }
   )
 }
 
+# Setting the port for the app
 options(shiny.port = 3838)
+
+# Running the app using the ui and server functions defined above
 shinyApp(ui = ui, server = server)
