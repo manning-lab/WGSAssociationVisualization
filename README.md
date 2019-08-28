@@ -21,8 +21,8 @@ This application is designed to produce regional plots of a given search range f
 | rs54321 |	10	| 1268346 |	0.001 |
 | rs98765 |	22	| 68263057 |	0.283 |
    <br>
- - A tabix indexed file in (.gz.tbi) format in the same location. <br>
- - Optional: File containing LD information to be incorperated into the plot. <br>
+- A tabix indexed file in (.gz.tbi) format in the same location. <br>
+- Optional: File containing LD information to be incorperated into the plot. <br>
 To do so, a file with LD-values per variant needs to be input. The package used for the plotting is designed to be used in conjuction with and handles outputs from our [LDGds pipeline](https://github.com/AnalysisCommons/LDGds). LD data should be stored in a plain, delimited text file as either a matrix or a row vector. Either format must have variant identifiers as row and column names. In conjunction with the LD data, a reference variant must be specified. See the package vignette and accompanying data for an example of input LD data.
 
 | | rs12345 | rs54321 | rs98765 |
