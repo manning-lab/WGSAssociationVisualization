@@ -119,15 +119,56 @@ makePlot <- function(temp, input, output, session)
                                                   as.numeric(chr),
                                                   as.numeric(pos),
                                                   as.numeric(pval))], 10)
-  disp <-
-    data.frame(
-      "Marker Name" = as.character(disp[, 1]),
-      "Chromosome" = as.character(disp[, 2]),
-      "Position" = as.character(disp[, 3]),
-      "P-value" = disp[, 4]
-    )
-  colnames(disp) <-
-    c("Marker Name", "Chromosome", "Position", "P-value")
+  
+  if(!is.null(ld_data))
+  {
+    disp$LD <- NA
+    disp$test <- disp[,1]
+    disp$test <- gsub("[[:punct:]]", "_", disp$test)
+    if(startsWith(disp$test[1], "chr") & !startsWith(ld_data$MarkerName[1], "chr"))
+    {
+      disp$test <- sub("^chr", "", disp$test)
+    }
+    else if(!startsWith(disp$test[1], "chr") & startsWith(ld_data$MarkerName[1], "chr"))
+    {
+      disp$test <- paste0("chr", disp$test)
+    }
+    
+    for (i in seq(1,10)) {
+      if(disp$test[i] %in% ld_data$MarkerName)
+      {
+        disp$LD[i] <- ld_data[ld_data$MarkerName == disp$test[i], "ld"]
+      }
+      else
+        disp$LD[i] <- NA
+    }
+    
+    disp <-
+      data.frame(
+        "Marker Name" = as.character(disp[, 1]),
+        "Chromosome" = as.character(disp[, 2]),
+        "Position" = as.character(disp[, 3]),
+        "P-value" = disp[, 4],
+        "LD" = disp$LD
+      )
+    
+    colnames(disp) <-
+      c("Marker Name", "Chromosome", "Position", "P-value", "LD")
+  }
+  else
+  {
+    disp <-
+      data.frame(
+        "Marker Name" = as.character(disp[, 1]),
+        "Chromosome" = as.character(disp[, 2]),
+        "Position" = as.character(disp[, 3]),
+        "P-value" = disp[, 4]
+      )
+    
+    colnames(disp) <-
+      c("Marker Name", "Chromosome", "Position", "P-value")  
+  }
+  
   output$topvars <- renderTable(disp, digits = -1)
   
   make_regional_plot(
@@ -152,7 +193,7 @@ ui <- fluidPage(
   tabPanel(
     "tab",
     div(id = "Sidebar",
-        sidebarPanel(
+        sidebarPanel(width=3,
           # Adding input boxes and buttons
           fluidRow(
             textInput(
@@ -228,35 +269,6 @@ server <- function(input, output, session)
   observeEvent(input$toggleSidebar, {
     shinyjs::toggle(id = "Sidebar")
   })
-  res_list <- get_tabix_df(file = "1kg-t2d.all.assoc.aug12.txt.gz", searchrange = "20:60900000-61100000")
-  temp <- res_list$value
-  output$plot <-
-    renderPlot(
-      make_regional_plot(
-        chr = 20,
-        start = 60900000,
-        end = 61100000,
-        variant_data = temp,
-        variant_chr_column = "V2",
-        variant_pos_column = "V3",
-        variant_y_column = "V9",
-        variant_marker_column = "V1",
-        genome_build = "hg19",
-        variant_ld_data = load_ld(file = "1kg-t2d.chr20_60.9M-61.1M.ld.csv", "20-61000005-A-G"),
-        variant_ld_ref = "20-61000005-A-G"
-      )
-    )
-  disp <- head(temp[order(temp[, "V9"]), c(1, 2, 3, 9)], 10)
-  disp <-
-    data.frame(
-      "Marker Name" = as.character(disp[, 1]),
-      "Chromosome" = as.character(disp[, 2]),
-      "Position" = as.character(disp[, 3]),
-      "P-value" = disp[, 4]
-    )
-  colnames(disp) <-
-    c("Marker Name", "Chromosome", "Position", "P-value")
-  output$topvars <- renderTable(disp, digits = -1)
   
   observeEvent(input$bucketsubmit, {
     closeAlert(session, "errorAlert")
