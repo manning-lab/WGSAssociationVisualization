@@ -2,8 +2,8 @@
 # Importing and installing Bioconductor packages
 FROM bioconductor/release_core2
 WORKDIR /tmp
-RUN R -e "BiocManager::install(c(\"biomaRt\", \"GenomicRanges\", \"Gviz\"), lib=\"/usr/local/lib/R/site-library/\")"
-RUN R -e "install.packages(c('data.table', 'devtools'), dependencies=TRUE, repos='http://cran.rstudio.com/')"
+RUN R -e "BiocManager::install(c(\"biomaRt\", \"GenomicRanges\", \"Gviz\", \"EnsDb.Hsapiens.v75\", \"EnsDb.Hsapiens.v86\"), lib=\"/usr/local/lib/R/site-library/\")"
+RUN R -e "install.packages(c('data.table', 'devtools', 'draw'), dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN R -e "devtools::install_github(\"manning-lab/WGSregionalPlot\")"
 
 FROM rocker/r-ver:3.6.0
