@@ -83,7 +83,7 @@ get_tabix_df <- function(file = NULL,
         value = withCallingHandlers(
           tryCatch(
             read.table(pipe(
-              paste("/usr/local/htslib-1.9/bin/tabix", file, searchrange)
+              paste("tabix", file, searchrange)
             ), stringsAsFactors = F),
             error = e.handler
           ),
@@ -138,7 +138,7 @@ var_init <- function(temp, input, output)
     ldpath <- paste0(input$bucket2, "/", isolate(input$ldpath))
     write(system(
       paste(
-        "/usr/local/gcloud/google-cloud-sdk/bin/gsutil cat",
+        "gsutil cat",
         ldpath
       ),
       intern = T

@@ -89,7 +89,7 @@ ui <- fluidPage(
 # Server-side code for the app
 server <- function(input, output, session)
 {
-  setwd("/tmp")
+  #setwd("/tmp")
   
   # Toggling the sidebar
   observeEvent(input$toggleSidebar, {
@@ -100,24 +100,6 @@ server <- function(input, output, session)
   observeEvent(input$bucketsubmit, {
     # Closing any alerts that maybe displayed
     closeAlert(session, "errorAlert")
-    
-    # Setting Google credentials to environment variables
-    Sys.setenv(GOOGLE_APPLICATION_CREDENTIALS = "/tmp/application_default_credentials.json") # Used for gcloud functions
-    Sys.setenv(BOTO_PATH = "/tmp/.boto") # Used for gsutil
-    
-    # Generating a .boto file from the application_default_credentials.json file to be used by gsutil
-    js <-
-      fromJSON(file = "/tmp/application_default_credentials.json")
-    boto_data <-
-      paste0(
-        "[OAuth2]\nclient_id = ",
-        js$client_id,
-        "\nclient_secret = ",
-        js$client_secret,
-        "\n\n[Credentials]\ngs_oauth2_refresh_token = ",
-        js$refresh_token
-      )
-    write(boto_data, file = "/tmp/.boto")
     
     # Generating the access token using gcloud to be used by tabix
     write(
@@ -147,7 +129,7 @@ server <- function(input, output, session)
           read.table(pipe(
             # Using gsutil to obtain list of the bucket contents
             paste(
-              "/usr/local/gcloud/google-cloud-sdk/bin/gsutil ls", bucket
+              "gsutil ls", bucket
             )
           )),
           error = function(e){ E <<- "Incorrect bucket link entered"}
@@ -260,7 +242,7 @@ server <- function(input, output, session)
             read.table(pipe(
               # Using gsutil to obtain list of the bucket contents
               paste(
-                "/usr/local/gcloud/google-cloud-sdk/bin/gsutil ls", bucket
+                "gsutil ls", bucket
               )
             )),
             error = function(e){ E <<- "Incorrect bucket link entered"}
@@ -424,7 +406,7 @@ server <- function(input, output, session)
           paste0(
             "export GCS_OAUTH_TOKEN=",
             accesstoken,
-            " ; /usr/local/htslib-1.9/bin/tabix ",
+            " ; tabix ",
             gspath,
             " ",
             input$searchrange
