@@ -89,8 +89,6 @@ ui <- fluidPage(
 # Server-side code for the app
 server <- function(input, output, session)
 {
-  #setwd("/tmp")
-  
   # Toggling the sidebar
   observeEvent(input$toggleSidebar, {
     shinyjs::toggle(id = "Sidebar")
