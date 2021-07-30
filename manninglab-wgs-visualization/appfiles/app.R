@@ -124,12 +124,12 @@ server <- function(input, output, session)
       # Using tryCatch with error and warning handlers
       value = withCallingHandlers(
         tryCatch(
-          read.table(pipe(
+          scan(pipe( 
             # Using gsutil to obtain list of the bucket contents
             paste(
               "gsutil ls", bucket
             )
-          )),
+          ), what = "character"), 
           error = function(e){ E <<- "Incorrect bucket link entered"}
         ),
         warning = function(w) {
@@ -148,7 +148,7 @@ server <- function(input, output, session)
                       value = bucket)
       
       bucket_items <-
-        data.frame(name = as.character(bucket_data$value$V1),
+        data.frame(name = as.character(bucket_data$value), 
                    stringsAsFactors = FALSE)
       
       # Extracting only .gz files who have corresponding .gz.tbi in the same location
